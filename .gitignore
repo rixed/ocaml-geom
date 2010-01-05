@@ -1,0 +1,14 @@
+*.cmi
+*.cmo
+*.cmx
+*.o
+.depend
+gmon.out
+*.swp
+*.s
+*.so
+*.cmxa
+*.cma
+*.a
+*.opt
+_build
