@@ -42,6 +42,8 @@ struct
 	module Poly = P_
 	module Path = Path_
 
+	let debug = true
+
 	let scale_point point center ratio =
 		Poly.Point.add center (Poly.Point.mul (Poly.Point.sub point center) ratio)
 
@@ -399,7 +401,7 @@ struct
 				let rec poly_of_loop i poly = match ppoly.vertices.(i) with
 					| None -> poly
 					| Some vertex ->
-						(*Format.printf "  Englobing vertex %d (%a), res_next %d@." i Poly.Point.print vertex.point vertex.res_next ;*)
+						if debug then Format.printf "  Englobing vertex %d (%a), res_next %d@." i Poly.Point.print vertex.point vertex.res_next ;
 						ppoly.vertices.(i) <- None ;
 						poly_of_loop
 							vertex.res_next
@@ -407,14 +409,14 @@ struct
 				match vertex_opt with
 				| None -> ()
 				| Some _vertex -> (* add the loop starting at i *)
-					(*Format.printf "Adding loop starting at %d@." i ;*)
+					if debug then Format.printf "Adding loop starting at %d@." i ;
 					res := (poly_of_loop i Poly.empty)::!res
 			) ppoly.vertices ;
 			!res
 
 		(* Split a procpoly by two vertices *)
 		let add_diag ppoly i1 i2 =
-			(*Format.printf "Add diagonal from %d to %d@." i1 i2 ;*)
+			if debug then Format.printf "Add diagonal from %d to %d@." i1 i2 ;
 			assert (i1 <> i2) ;
 			assert (i1 < ppoly.size && i2 < ppoly.size) ;
 			assert (ppoly.size + 2 <= Array.length ppoly.vertices) ;
@@ -458,14 +460,23 @@ struct
 					(Cnt.unopt ppoly.vertices.(v1)).point)
 				queue ;
 			
-			(*Format.printf "@[queue : " ;
-			Array.iter (fun i -> Format.printf "(@[%d : %a of kind %s@]),@ " i Poly.Point.print (Cnt.unopt ppoly.vertices.(i)).point (string_of_kind (Cnt.unopt ppoly.vertices.(i)).kind)) queue ;
-			Format.printf "@]@." ;*)
+			if debug then (
+				Format.printf "@[queue : " ;
+				Array.iter (fun i ->
+					Format.printf "(@[%d : %a of kind %s, <-:%d ->:%d@]),@ "
+						i
+						Poly.Point.print (Cnt.unopt ppoly.vertices.(i)).point
+						(string_of_kind (Cnt.unopt ppoly.vertices.(i)).kind)
+						(Cnt.unopt ppoly.vertices.(i)).orig_prev
+						(Cnt.unopt ppoly.vertices.(i)).orig_next)
+					queue ;
+				Format.printf "@]@." ;
+			) ;
 
 			(* Binary search tree of edges *)
 			let tree = ref Tree.empty in
 			
-			(*let print_edge fmt v =
+			let print_edge fmt v =
 				Format.fprintf fmt "@[[%a %a %s %d]@]"
 					Poly.Point.print v.point
 					Poly.Point.print v.orig_next_point
@@ -475,61 +486,62 @@ struct
 				Format.printf "tree = @[" ;
 				Tree.iter !tree (fun edge ->
 					Format.printf "%a@ " print_edge edge) ;
-				Format.printf "@]@." in*)
+				Format.printf "@]@." in
 
 			let process_vertex i vertex =
-				(*Format.printf "Process point %d at %a of kind %s :@." i Poly.Point.print vertex.point (string_of_kind vertex.kind) ;*)
+				if debug then Format.printf "Process point %d at %a of kind %s :@." i Poly.Point.print vertex.point (string_of_kind vertex.kind) ;
 				match vertex.kind with
 				| Start ->
 					vertex.helper <- i ;
-					(*Format.printf "Inserting edge %a into tree@." print_edge vertex ;*)
-					tree := Tree.insert !tree vertex (*;
-					print_tree ()*)
+					if debug then Format.printf "Inserting edge %a into tree@." print_edge vertex ;
+					tree := Tree.insert !tree vertex ;
+					if debug then print_tree ()
 				| End ->
 					let prev = Cnt.unopt ppoly.vertices.((Cnt.unopt ppoly.vertices.(i)).orig_prev) in
 					let h = prev.helper in
 					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					(*Format.printf "Removing prev %a from tree@." print_edge prev ;*)
-					tree := Tree.remove !tree prev (*;
-					print_tree ()*)
+					if debug then Format.printf "Removing prev %a from tree@." print_edge prev ;
+					tree := Tree.remove !tree prev ;
+					if debug then print_tree ()
 				| Split ->
 					let at_left = Tree.find_before !tree vertex in
 					add_diag ppoly i at_left.helper ;
 					at_left.helper <- i ;
 					vertex.helper <- i ;
-					(*Format.printf "Inserting edge %a into tree@." print_edge vertex ;*)
-					tree := Tree.insert !tree vertex (*;
-					print_tree ()*)
+					if debug then Format.printf "Inserting edge %a into tree@." print_edge vertex ;
+					tree := Tree.insert !tree vertex ;
+					if debug then print_tree ()
 				| Merge ->
 					let prev = Cnt.unopt ppoly.vertices.((Cnt.unopt ppoly.vertices.(i)).orig_prev) in
 					let h = prev.helper in
 					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					(*Format.printf "Removing prev %a from tree@." print_edge prev ;*)
+					if debug then Format.printf "Removing prev %a from tree@." print_edge prev ;
 					tree := Tree.remove !tree prev ;
 					let at_left = Tree.find_before !tree vertex in
 					let h' = at_left.helper in
 					if (Cnt.unopt ppoly.vertices.(h')).kind = Merge then add_diag ppoly i h' ;
-					at_left.helper <- i (*;
-					print_tree ()*)
+					at_left.helper <- i ;
+					if debug then print_tree ()
 				| Regular_down ->
 					let prev = Cnt.unopt ppoly.vertices.((Cnt.unopt ppoly.vertices.(i)).orig_prev) in
 					let h = prev.helper in
 					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					(*Format.printf "Removing prev %a from tree@." print_edge prev ;*)
+					if debug then Format.printf "Removing prev %a from tree@." print_edge prev ;
 					tree := Tree.remove !tree prev ;
 					vertex.helper <- i ;
-					(*Format.printf "Inserting edge %a into tree@." print_edge vertex ;*)
-					tree := Tree.insert !tree vertex (*;
-					print_tree ()*)
+					if debug then Format.printf "Inserting edge %a into tree@." print_edge vertex ;
+					tree := Tree.insert !tree vertex ;
+					if debug then print_tree ()
 				| Regular_up ->
 					let at_left = Tree.find_before !tree vertex in
 					let h = at_left.helper in
 					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					at_left.helper <- i (*;
-					print_tree () *) in
+					at_left.helper <- i ;
+					if debug then print_tree ()
+				in
 			Array.iter (fun i -> process_vertex i (Cnt.unopt ppoly.vertices.(i))) queue
 		
-		let triangulate ppoly to_triangle =
+		let triangulate ppoly _to_triangle =
 			monotonize ppoly
 			(* TODO: split monotone polys to convex polys or up to triangles *)
 
