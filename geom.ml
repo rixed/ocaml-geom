@@ -199,7 +199,7 @@ sig
 	module Poly : POLYGON
 	module Path : PATH with module Point = Poly.Point
 	val area : Poly.t list -> Poly.Point.scalar
-	val is_convex_at : Poly.t -> bool
+	val is_convex_at : Poly.Point.t -> Poly.Point.t -> Poly.Point.t -> bool
 	val is_convex : Poly.t -> bool
 	val in_cone : Poly.t -> Poly.Point.t -> bool
 	val is_diagonal : Poly.t -> Poly.t -> bool

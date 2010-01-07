@@ -57,12 +57,12 @@ struct
 				Poly.Point.K.zero))
 		Poly.Point.K.zero polys
 
-	let is_convex_at poly =
-		(Poly.Point.compare_left (prev_pt poly) (Poly.get poly) (next_pt poly)) >= 0
+	let is_convex_at prev point next =
+		Poly.Point.compare_left prev point next >= 0
 
 	let iter_concave poly f =
 		Poly.iter poly (fun pol ->
-			if not (is_convex_at pol) then f pol)
+			if not (is_convex_at (prev_pt pol) (Poly.get pol) (next_pt pol)) then f pol)
 
 	let is_convex poly =
 		try (
@@ -213,14 +213,14 @@ struct
 					aux new_poly0 other_polys) in
 		aux (List.hd all_polys) (List.tl all_polys)
 
-	let convex_partition polys =
+	let convex_partition_slow polys =
 		let res = ref [] in
 		let rec split_aux pol = match split_concavity pol with
 			| pol0, pol1 when pol1 = Poly.empty -> res := pol0::!res
 			| pol0, pol1 -> split_aux pol0 ; split_aux pol1 in
 		split_aux (simplify polys) ;
 		!res
-
+	
 	let rec iter_diagonals poly f =
 		Poly.iter_pairs poly (fun p0 p1 -> if not (are_neighbour p0 p1) then f p0 p1)
 
@@ -229,7 +229,7 @@ struct
 			if can_split p0 p1 then f p0 p1)
 
 	let triangulate_slow polys =
-		let convex_polys = convex_partition polys in
+		let convex_polys = convex_partition_slow polys in
 		let res = ref [] in
 		let rec triangulate_convex poly =
 			let (choose_best, pick_best) = make_chooser () in
@@ -325,15 +325,13 @@ struct
 			let cmpy = Poly.Point.compare_y p1 p2 in
 			if cmpy <> 0 then -cmpy else Poly.Point.compare_x p1 p2
 
-		let kind_of_point poly =
-			let prev = Poly.prev poly in
-			let next = Poly.next poly in
-			let cmp1 = compare_point_y (Poly.get prev) (Poly.get poly) in
-			let cmp2 = compare_point_y (Poly.get next) (Poly.get poly) in
+		let kind_of_point prev point next =
+			let cmp1 = compare_point_y prev point in
+			let cmp2 = compare_point_y next point in
 			assert (cmp1 <> 0 && cmp2 <> 0) ;
 			if cmp1 = -1 && cmp2 = 1 then Regular_down else
 			if cmp1 = 1 && cmp2 = -1 then Regular_up else
-				let convex = is_convex_at poly in
+				let convex = is_convex_at prev point next in
 				if cmp1 = -1 then (* prev and next points are before current point *)
 					if convex then End else Merge
 				else (* prev and next points are after current point *)
@@ -343,11 +341,11 @@ struct
 			point : Poly.Point.t ;
 			orig_prev : int ;
 			orig_next : int ;
-			orig_next_point : Poly.Point.t ;	(* so that eadges are easier to compare *)
+			orig_next_point : Poly.Point.t ;	(* so that edges are easier to compare *)
 			mutable res_prev : int ;
 			mutable res_next : int ;
 			mutable helper : int ;	(* -1 when unset *)
-			kind : vertex_kind	(* kind of the starting vertex *)
+			mutable kind : vertex_kind	(* change when we add diagonals *)
 		}
 
 		type procpoly = {
@@ -376,7 +374,7 @@ struct
 							res_prev = orig_prev ;
 							res_next = orig_next ;
 							helper = -1 ;
-							kind = kind_of_point poly
+							kind = kind_of_point (prev_pt poly) (Poly.get poly) (next_pt poly)
 						} in
 					let rec init_single () =
 						if i >= orig_size then None
@@ -422,13 +420,20 @@ struct
 			assert (ppoly.size + 2 <= Array.length ppoly.vertices) ;
 			let v1 = Cnt.unopt ppoly.vertices.(i1) in
 			let v2 = Cnt.unopt ppoly.vertices.(i2) in
-			ppoly.vertices.(ppoly.size) <- Some { v1 with res_next = ppoly.size+1 } ;
-			ppoly.vertices.(ppoly.size+1) <- Some { v2 with res_prev = ppoly.size } ;
+			let new_v1 = { v1 with res_next = ppoly.size+1 } in
+			ppoly.vertices.(ppoly.size) <- Some new_v1 ;
+			let new_v2 = { v2 with res_prev = ppoly.size } in
+			ppoly.vertices.(ppoly.size+1) <- Some new_v2 ;
 			(Cnt.unopt ppoly.vertices.(v1.res_prev)).res_next <- ppoly.size ;
 			v1.res_prev <- i2 ;
 			(Cnt.unopt ppoly.vertices.(v2.res_next)).res_prev <- ppoly.size+1 ;
 			v2.res_next <- i1 ;
-			ppoly.size <- ppoly.size + 2
+			ppoly.size <- ppoly.size + 2 ;
+			(* Reset the vertices kind *)
+			let reset_kind_of_vertex v =
+				let pt_of v = (Cnt.unopt ppoly.vertices.(v)).point in
+				v.kind <- kind_of_point (pt_of v.res_prev) v.point (pt_of v.res_next) in
+			List.iter reset_kind_of_vertex [ v1 ; v2 ; new_v1 ; new_v2]
 
 		(* For the Tree *)
 		let compare_edge_x v1 v2 =
@@ -451,14 +456,19 @@ struct
 			let compare v1 v2 = compare_edge_x v1 v2
 		end)
 
-		let monotonize ppoly =
-			(* Build a list of all the vertices, sorted *)
+		(* Build a list of all the vertices, sorted *)
+		let make_queue ppoly =
 			let queue = Array.init ppoly.size (fun i -> i) in
 			Array.sort (fun v0 v1 ->
 				compare_point_y
 					(Cnt.unopt ppoly.vertices.(v0)).point
 					(Cnt.unopt ppoly.vertices.(v1)).point)
 				queue ;
+			queue
+
+		let monotonize polys =
+			let ppoly = make_procpoly polys in
+			let queue = make_queue ppoly in
 			
 			if debug then (
 				Format.printf "@[queue : " ;
@@ -539,24 +549,65 @@ struct
 					at_left.helper <- i ;
 					if debug then print_tree ()
 				in
-			Array.iter (fun i -> process_vertex i (Cnt.unopt ppoly.vertices.(i))) queue
+			Array.iter (fun i -> process_vertex i (Cnt.unopt ppoly.vertices.(i))) queue ;
+			make_funpoly ppoly
 		
-		let triangulate ppoly _to_triangle =
-			monotonize ppoly
-			(* TODO: split monotone polys to convex polys or up to triangles *)
+		let triangulate polys =
+			let mono_polys = monotonize polys in
+			let triangulate_mono poly =
+				let ppoly = make_procpoly [poly] in
+				let queue = make_queue ppoly in
+				(* The stack of not already triangulated vertices *)
+				let stack = Stack.create () in
+				Stack.push queue.(0) stack ;
+				Stack.push queue.(1) stack ;
+				let process_opposed_vertex v =
+					let last = Stack.top stack in
+					Stack.iter (fun vs -> add_diag ppoly v vs) stack ;
+					Stack.clear stack ;
+					Stack.push last stack ;
+					Stack.push v stack in
+				let process_same_vertex v =
+					(* telles weither diag v,prev is inside the poly *)
+					let diag_is_inside prev last =
+						let pt_of v = (Cnt.unopt ppoly.vertices.(v)).point in
+						Poly.Point.compare_left (pt_of v) (pt_of last) (pt_of prev) > 0 in
+					let rec aux last =
+						if not (Stack.is_empty stack) then
+							let prev = Stack.pop stack in
+							if diag_is_inside prev last then (
+								add_diag ppoly v prev ;
+								aux prev
+							) else
+								Stack.push prev stack in
+					aux (Stack.pop stack) in
+				let process_vertex i =
+					let v = queue.(i) in
+					(* Since ppoly is monotone, it only have one Start (at top),
+					 * one End (at end) and Regular_up/down vertices. So these are all
+					 * regular. *)
+					if (Cnt.unopt ppoly.vertices.(v)).kind <> (Cnt.unopt ppoly.vertices.(Stack.top stack)).kind then
+						process_opposed_vertex v
+					else
+						process_same_vertex v in
+				assert ((Cnt.unopt ppoly.vertices.(queue.(0))).kind = Start) ;
+				assert ((Cnt.unopt ppoly.vertices.(queue.(Array.length queue -1))).kind = End) ;
+				(* TODO: and that all others are regular *)
+				for i = 3 to (Array.length queue) - 2 do process_vertex i done ;
+				(* Add diagonals from last vertex to remaining vertices on stack *)
+				let last = queue.((Array.length queue)-1) in
+				Stack.iter (fun v -> add_diag ppoly last v) stack ;
+				make_funpoly ppoly in
+			List.flatten (List.map triangulate_mono (mono_polys))
 
 	end (* module Monotonizer *)
 	
-	let monotonize polys =
-		let ppoly = Monotonizer.make_procpoly polys in
-		Monotonizer.monotonize ppoly ;
-		Monotonizer.make_funpoly ppoly
+	let monotonize = Monotonizer.monotonize
 	
-	let triangulate polys =
-		let ppoly = Monotonizer.make_procpoly polys in
-		Monotonizer.triangulate ppoly true ;
-		Monotonizer.make_funpoly ppoly
+	let triangulate = Monotonizer.triangulate
 			
+	let convex_partition polys = convex_partition_slow polys
+
 
 end (* module Algorithms *)
 
