@@ -18,7 +18,7 @@ struct
 	let empty = []
 	let is_empty s = List.length s = 0
 	let size = List.length
-	let add s e = e::s
+	let add s e = e :: s
 	let iter s f = List.iter f s
 	let map s f = List.map f s
 	let exists s f = List.exists f s
@@ -36,28 +36,28 @@ struct
 	let rewind (prevs, nexts, size) =
 		match List.rev_append prevs nexts with
 			| [] -> empty
-			| fst::rest -> [fst], rest, size
+			| fst :: rest -> [fst], rest, size
 
 	let get = function
-		| curr::_, _, _ -> curr
+		| curr :: _, _, _ -> curr
 		| _ -> raise Not_found
 	let next = function
-		| prevs, curr::nexts, size -> curr::prevs, nexts, size
+		| prevs, curr :: nexts, size -> curr :: prevs, nexts, size
 		| lst -> rewind lst
 	let prev = function
-		| [curr], nexts, size -> List.rev (curr::nexts), [], size
-		| curr::prevs, nexts, size -> prevs, curr::nexts, size
+		| [curr], nexts, size -> List.rev (curr :: nexts), [], size
+		| curr :: prevs, nexts, size -> prevs, curr :: nexts, size
 		| [], [], size -> assert(size = 0) ; empty
 		| _ -> assert false
 	let insert_before lst e = match lst with
-		| curr::prevs, nexts, size -> e::prevs, curr::nexts, (size+1)
+		| curr :: prevs, nexts, size -> e :: prevs, curr :: nexts, size+1
 		| _ -> [e], [], 1
 	let insert_after lst e = match lst with
-		| curr::prevs, nexts, size -> e::curr::prevs, nexts, (size+1)
+		| curr :: prevs, nexts, size -> e :: curr :: prevs, nexts, size+1
 		| _ -> [e], [], 1
 	let remove lst = match lst with
-		| _::prevs, n::nexts, size -> n::prevs, nexts, (size-1)
-		| _::prevs, [], size -> rewind (prevs, [], (size-1))
+		| _ :: prevs, n :: nexts, size -> n :: prevs, nexts, size-1
+		| _ :: prevs, [], size -> rewind (prevs, [], size-1)
 		| _ -> raise Not_found
 	let length (_, _, s) = s
 	let iter lst f =
@@ -93,12 +93,12 @@ struct
 
 	let step_left { lst=l ; cmp=c } =
 		let step_left_tripplet = function
-		| Some (e::rest, middle, right) -> Some (rest, e, middle::right)
+		| Some (e :: rest, middle, right) -> Some (rest, e, middle :: right)
 		| x -> x in
 		{ lst = step_left_tripplet l ; cmp = c }
 	let step_right { lst=l ; cmp=c } =
 		let step_right_tripplet = function
-		| Some (left, middle, e::rest) -> Some (middle::left, e, rest)
+		| Some (left, middle, e :: rest) -> Some (middle :: left, e, rest)
 		| x -> x in
 		{ lst = step_right_tripplet l ; cmp = c }
 
@@ -118,8 +118,8 @@ struct
 	| None -> raise Not_found
 	| Some (left, middle, right) ->
 		let remove_middle_from_tripplet = function
-		| Some (l::rest, _, right) -> Some (rest, l, right)
-		| Some ([], _, r::rest) -> Some ([], r, rest)
+		| Some (l :: rest, _, right) -> Some (rest, l, right)
+		| Some ([], _, r :: rest) -> Some ([], r, rest)
 		| Some ([], _, []) -> None
 		| None -> failwith "BUG" in
 		match l.cmp e middle with
@@ -138,10 +138,10 @@ struct
 	let create _n = ref []
 	let is_empty b = !b = []
 
-	let put b e = b := e::!b
+	let put b e = b := e :: !b
 	let take b = match !b with
 	| [] -> raise Not_found
-	| first::rest -> b := rest ; first
+	| first :: rest -> b := rest ; first
 
 	let find b f = List.find f !b
 end

@@ -143,12 +143,12 @@ struct
 			| Some d when d <= dist -> ()
 			| _ -> best_dist := Some dist ; best_segment := Some (pol0, pol1, thing) in
 		let pick_best () = !best_segment in
-		(choose_best, pick_best)
+		choose_best, pick_best
 
 	let split_concavity poly =
 		(* Build the list of concave points *)
 		let concave_pts = ref [] in
-		iter_concave poly (fun pol -> concave_pts := pol::!concave_pts) ;
+		iter_concave poly (fun pol -> concave_pts := pol :: !concave_pts) ;
 		(* Try splits using only concave points. *)
 		let choose_best, pick_best = make_chooser () in
 		let foreach_pairs l f =
@@ -170,7 +170,7 @@ struct
 			) !concave_pts
 		) ;
 		match pick_best () with
-		| None -> (poly, Poly.empty)
+		| None -> poly, Poly.empty
 		| Some (pol0, pol1, _) -> split_by pol0 pol1
 
 	let simplify all_polys =
@@ -197,10 +197,10 @@ struct
 				let list_iter_with_cmpl f l =
 					let rec aux prevs = function
 						| [] -> ()
-						| elmt::[] -> f prevs elmt []
-						| elmt::nexts ->
+						| elmt :: [] -> f prevs elmt []
+						| elmt :: nexts ->
 							f prevs elmt nexts ;
-							aux (elmt::prevs) nexts in
+							aux (elmt :: prevs) nexts in
 					aux [] l in
 				list_iter_with_cmpl (fun prev_polys poly next_polys ->
 					match best_connection poly with
@@ -217,7 +217,7 @@ struct
 	let convex_partition_slow polys =
 		let res = ref [] in
 		let rec split_aux pol = match split_concavity pol with
-			| pol0, pol1 when pol1 = Poly.empty -> res := pol0::!res
+			| pol0, pol1 when pol1 = Poly.empty -> res := pol0 :: !res
 			| pol0, pol1 -> split_aux pol0 ; split_aux pol1 in
 		split_aux (simplify polys) ;
 		!res
@@ -233,10 +233,10 @@ struct
 		let convex_polys = convex_partition_slow polys in
 		let res = ref [] in
 		let rec triangulate_convex poly =
-			let (choose_best, pick_best) = make_chooser () in
+			let choose_best, pick_best = make_chooser () in
 			iter_splitable_diagonals poly (fun p0 p1 -> choose_best p0 p1 ()) ;
 			match pick_best () with
-			| None -> res := poly::!res
+			| None -> res := poly :: !res
 			| Some (p0, p1, _) ->
 				let pol0, pol1 = split_by p0 p1 in
 				triangulate_convex pol0 ; triangulate_convex pol1
@@ -310,7 +310,7 @@ struct
 			if cmpy <> 0 then -cmpy else Poly.Point.compare_x p1 p2
 
 		let kind_of_point poly =
-			let prev, point, next = (prev_pt poly), (Poly.get poly), (next_pt poly) in
+			let prev, point, next = prev_pt poly, Poly.get poly, next_pt poly in
 			let cmp1 = compare_point_y prev point in
 			let cmp2 = compare_point_y next point in
 			assert (cmp1 <> 0 && cmp2 <> 0) ;
@@ -368,7 +368,7 @@ struct
 					let rec init_single () =
 						let poly = List.hd !left_polys in
 						if i - !loop_start < Poly.length poly then (
-							left_polys := (Poly.next poly)::(List.tl !left_polys) ;
+							left_polys := Poly.next poly :: List.tl !left_polys ;
 							vertex_of_poly poly
 						) else (
 							loop_start := i ;
@@ -400,8 +400,8 @@ struct
 										vertex.point
 										ppoly.vertices.(best).point
 										ppoly.vertices.(other).point
-									then test_diag (best::bads) other rest
-									else test_diag (other::bads) best rest in
+									then test_diag (best :: bads) other rest
+									else test_diag (other :: bads) best rest in
 							test_diag [] (List.hd vertex.diags) (List.tl vertex.diags) in
 					vertex.diags <- rem_diags ;
 					let new_poly = Poly.insert_after poly vertex.point in
@@ -412,7 +412,7 @@ struct
 					) in
 				while start_vertex.diags <> [] do
 					if debug then Format.printf "Adding a loop starting at %d@." i ;
-					res := (poly_of_loop i None Poly.empty) :: !res
+					res := poly_of_loop i None Poly.empty :: !res
 				done in
 			Array.iteri add_all_loops_from ppoly.vertices ;
 			!res

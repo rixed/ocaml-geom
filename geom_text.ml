@@ -45,7 +45,7 @@ struct
 			let first = if c = 0 then 0 else outline.contours.(c-1)+1 in
 			let last = outline.contours.(c) in
 			let path = path_of_contour (first+1) last (Path.empty (to_point outline.points.(first))) in
-			polys := (Algo.poly_of_path path resolution)::!polys
+			polys := Algo.poly_of_path path resolution :: !polys
 		done ;
 (*		Format.printf "Poly list = " ;
 		List.iter (fun p -> Format.printf "@[%a@]@," Poly.print p) !polys ;

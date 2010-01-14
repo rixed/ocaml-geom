@@ -38,7 +38,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	let empty start = { start = start ; edges = [] }
 
 	let extend path next ctrls interp = (match path.edges with
-		| (pt, _, _)::_ -> if Point.eq pt next then
+		| (pt, _, _) :: _ -> if Point.eq pt next then
 			Format.printf "Path edge of no length at point %a@\n" Point.print pt
 		| _ -> () ) ;
 		{ path with edges = path.edges @ [next, ctrls, interp] }
@@ -49,7 +49,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 
 	let translate path disp =
 		let edge_translate (p, ctrls, i) =
-			(Point.add p disp, List.map (fun p -> Point.add p disp) ctrls, i) in
+			Point.add p disp, List.map (fun p -> Point.add p disp) ctrls, i in
 		{ start = Point.add path.start disp ; edges = List.map edge_translate path.edges }
 
 	let center path =
@@ -60,7 +60,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	(* FIXME: move this under ALGO, and use scale_point *)
 	let scale path center scale =
 		let scale_me p = Point.add center (Point.mul (Point.sub p center) scale) in
-		let edge_scale (p, ctrls, i) = (scale_me p, List.map scale_me ctrls, i) in
+		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
 		{ start = scale_me path.start ; edges = List.map edge_scale path.edges }
 
 	(*
@@ -111,7 +111,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 			f start ;
 			match edges with
 			| [] -> ()
-			| (stop, ctrls, interp)::rest ->
+			| (stop, ctrls, interp) :: rest ->
 				List.iter f (interp start stop ctrls res) ;
 				aux stop rest
 		in
