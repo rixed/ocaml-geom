@@ -70,17 +70,18 @@ struct
 			true
 		) with Exit -> false
 
-	(* Check weither the target point in toward the interior of the poly at the focused point *)
-	let in_cone poly target =
-		let prev = prev_pt poly
-		and next = next_pt poly
-		and focus = Poly.get poly in
+	let in_between prev focus next target =
 		let cmp1 = (Poly.Point.compare_left focus target prev) > 0
 		and cmp2 = (Poly.Point.compare_left focus target next) > 0 in
 		if cmp1 then
 			not cmp2 || (Poly.Point.compare_left focus prev next) > 0
 		else
 			not cmp2 && (Poly.Point.compare_left focus prev next) > 0
+
+
+	(* Check weither the target point is toward the interior of the poly at the focused point *)
+	let in_cone poly target =
+		in_between (prev_pt poly) (Poly.get poly) (next_pt poly) target
 
 	let is_diagonal pol0 pol1 =
 		let p0 = Poly.get pol0 in
@@ -293,23 +294,6 @@ struct
 	
 	module Monotonizer =
 	struct
-		(* Data structures needed during the sweep :
-		 * - a procedural polygon, initialized with the user's poly list, to which
-		 *   we will add diagonals. This is an array of (point, next idx, prev idx).
-		 *   This is the result that we will converted back to functional poly list
-		 *   before returning ;
-		 * - an array of vertices -for fast access- of (point, kind, helper) ;
-		 *   this can be merged with the procedural poly which is also an array,
-		 *   adding a tag or using an array of (point, kind, next idx, prev idx, helper),
-		 *   provided we use a distinct scheme to find the next/prev points when needed
-		 *   during the slice (prev idx and next idx describe the result, not the
-		 *   original polygon we sweep over). This is most easily done by adding two more
-		 *   fields orig_prev and orig_next, that describes the original polygon (we cannot
-		 *   merely count on the fact that prev index is i-1 and next i+1 because the
-		 *   poly is made of saveral simple polys !)
-		 * - an array of vertices index sorted by Y for the sweep ;
-		 * - a tree of edges searched during the sweep.
-		 *)
 		type vertex_kind = Start | End | Regular_down | Regular_up | Split | Merge
 		let string_of_kind = function
 			| Start -> "Start"
@@ -325,7 +309,8 @@ struct
 			let cmpy = Poly.Point.compare_y p1 p2 in
 			if cmpy <> 0 then -cmpy else Poly.Point.compare_x p1 p2
 
-		let kind_of_point prev point next =
+		let kind_of_point poly =
+			let prev, point, next = (prev_pt poly), (Poly.get poly), (next_pt poly) in
 			let cmp1 = compare_point_y prev point in
 			let cmp2 = compare_point_y next point in
 			assert (cmp1 <> 0 && cmp2 <> 0) ;
@@ -339,108 +324,111 @@ struct
 
 		type vertex = {
 			point : Poly.Point.t ;
-			orig_prev : int ;
-			orig_next : int ;
-			orig_next_point : Poly.Point.t ;	(* so that edges are easier to compare *)
-			mutable res_prev : int ;
-			mutable res_next : int ;
+			next_point : Poly.Point.t ;	(* so that edges are easier to compare *)
+			prev : int ;
+			next : int ;
+			kind : vertex_kind ;	(* true only on the original ppoly, not resulting one *)
 			mutable helper : int ;	(* -1 when unset *)
-			mutable kind : vertex_kind	(* change when we add diagonals *)
+			mutable diags : int list
 		}
 
+		let print_vertex fmt v =
+			Format.fprintf fmt "@[{fr:%a to:%a k:%s h:%d <-:%d ->:%d diags:["
+				Poly.Point.print v.point
+				Poly.Point.print v.next_point
+				(string_of_kind v.kind)
+				v.helper v.prev v.next ;
+			List.iter (fun i -> Format.fprintf fmt "%d;" i) v.diags ;
+			Format.fprintf fmt "]}@]"
+
 		type procpoly = {
-			vertices : vertex option array ;
-			mutable size : int	(* because the array is made larger so that we can add diagonals *)
+			vertices : vertex array ;
 		}
 
 		(* return the procpoly equivalent to a list of simple polys *)
 		let make_procpoly polys =
-			let orig_size = List.fold_left (fun sz poly -> sz + (Poly.length poly)) 0 polys in
-			let ppoly_size = orig_size * 2 in
+			let size = List.fold_left (fun sz poly -> sz + (Poly.length poly)) 0 polys in
 			let loop_start = ref 0 in
 			let left_polys = ref polys in
 			{
-				size = orig_size ;
-				vertices = Array.init ppoly_size (fun i ->
+				vertices = Array.init size (fun i ->
 					let vertex_of_poly poly = 
 						let sz = Poly.length poly in
-						let orig_prev = (if i > !loop_start then i else !loop_start + sz) -1 in
-						let orig_next = if i - !loop_start < sz-1 then i+1 else !loop_start in
+						let prev = (if i > !loop_start then i else !loop_start + sz) -1 in
+						let next = if i - !loop_start < sz-1 then i+1 else !loop_start in
 						{
 							point = Poly.get poly ;
-							orig_prev = orig_prev ;
-							orig_next = orig_next ;
-							orig_next_point = Poly.get (Poly.next poly) ;
-							res_prev = orig_prev ;
-							res_next = orig_next ;
+							next_point = Poly.get (Poly.next poly) ;
+							prev = prev ;
+							next = next ;
+							kind = kind_of_point poly ;
 							helper = -1 ;
-							kind = kind_of_point (prev_pt poly) (Poly.get poly) (next_pt poly)
+							diags = [ next ]
 						} in
 					let rec init_single () =
-						if i >= orig_size then None
-						else
-							let poly = List.hd !left_polys in
-							if i - !loop_start < Poly.length poly then (
-								left_polys := (Poly.next poly)::(List.tl !left_polys) ;
-								Some (vertex_of_poly poly)
-							) else (
-								loop_start := i ;
-								left_polys := List.tl !left_polys ;
-								init_single ()
-							) in
-						init_single ()
+						let poly = List.hd !left_polys in
+						if i - !loop_start < Poly.length poly then (
+							left_polys := (Poly.next poly)::(List.tl !left_polys) ;
+							vertex_of_poly poly
+						) else (
+							loop_start := i ;
+							left_polys := List.tl !left_polys ;
+							init_single ()
+						) in
+					init_single ()
 				)
 			}
 
-		(* The inverse of the previous one *)
+		(* The inverse of the previous one, taking into account internal diagonals.
+		 * We proceed by emptying vertices diags. *)
 		let make_funpoly ppoly =
-			let res = ref [] in
-			Array.iteri (fun i vertex_opt ->
-				let rec poly_of_loop i poly = match ppoly.vertices.(i) with
-					| None -> poly
-					| Some vertex ->
-						if debug then Format.printf "  Englobing vertex %d (%a), res_next %d@." i Poly.Point.print vertex.point vertex.res_next ;
-						ppoly.vertices.(i) <- None ;
-						poly_of_loop
-							vertex.res_next
-							(Poly.insert_after poly vertex.point) in
-				match vertex_opt with
-				| None -> ()
-				| Some _vertex -> (* add the loop starting at i *)
-					if debug then Format.printf "Adding loop starting at %d@." i ;
-					res := (poly_of_loop i Poly.empty)::!res
-			) ppoly.vertices ;
+			let res = ref [] in	(* our result, a list of polys *)
+			let add_all_loops_from i start_vertex =
+				let rec poly_of_loop j from_opt poly =
+					let vertex = ppoly.vertices.(j) in
+					let best_diag, rem_diags = match from_opt with
+						| None ->
+							(* If we are just starting, any diag will do *)
+							List.hd vertex.diags, List.tl vertex.diags
+						| Some from ->
+							let rec test_diag bads best others =
+								match others with
+								| [] -> best, bads
+								| other :: rest ->
+									if best = from || in_between
+										ppoly.vertices.(from).point
+										vertex.point
+										ppoly.vertices.(best).point
+										ppoly.vertices.(other).point
+									then test_diag (best::bads) other rest
+									else test_diag (other::bads) best rest in
+							test_diag [] (List.hd vertex.diags) (List.tl vertex.diags) in
+					vertex.diags <- rem_diags ;
+					let new_poly = Poly.insert_after poly vertex.point in
+					if best_diag = i then new_poly
+					else (
+						if debug then Format.printf "  Adding vertex #%d, then to #%d@." j best_diag ;
+						poly_of_loop best_diag (Some j) new_poly
+					) in
+				while start_vertex.diags <> [] do
+					if debug then Format.printf "Adding a loop starting at %d@." i ;
+					res := (poly_of_loop i None Poly.empty) :: !res
+				done in
+			Array.iteri add_all_loops_from ppoly.vertices ;
 			!res
 
-		(* Split a procpoly by two vertices *)
 		let add_diag ppoly i1 i2 =
 			if debug then Format.printf "Add diagonal from %d to %d@." i1 i2 ;
 			assert (i1 <> i2) ;
-			assert (i1 < ppoly.size && i2 < ppoly.size) ;
-			assert (ppoly.size + 2 <= Array.length ppoly.vertices) ;
-			let v1 = Cnt.unopt ppoly.vertices.(i1) in
-			let v2 = Cnt.unopt ppoly.vertices.(i2) in
-			let new_v1 = { v1 with res_next = ppoly.size+1 } in
-			ppoly.vertices.(ppoly.size) <- Some new_v1 ;
-			let new_v2 = { v2 with res_prev = ppoly.size } in
-			ppoly.vertices.(ppoly.size+1) <- Some new_v2 ;
-			(Cnt.unopt ppoly.vertices.(v1.res_prev)).res_next <- ppoly.size ;
-			v1.res_prev <- i2 ;
-			(Cnt.unopt ppoly.vertices.(v2.res_next)).res_prev <- ppoly.size+1 ;
-			v2.res_next <- i1 ;
-			ppoly.size <- ppoly.size + 2 ;
-			(* Reset the vertices kind *)
-			let reset_kind_of_vertex v =
-				let pt_of v = (Cnt.unopt ppoly.vertices.(v)).point in
-				v.kind <- kind_of_point (pt_of v.res_prev) v.point (pt_of v.res_next) in
-			List.iter reset_kind_of_vertex [ v1 ; v2 ; new_v1 ; new_v2]
+			ppoly.vertices.(i1).diags <- i2 :: ppoly.vertices.(i1).diags ;
+			ppoly.vertices.(i2).diags <- i1 :: ppoly.vertices.(i2).diags
 
 		(* For the Tree *)
 		let compare_edge_x v1 v2 =
 			(* e1 is at left from e2 if the polygon (e1h, e1l, e2l, e2h) is direct *)
 			let min_max p0 p1 = if compare_point_y p0 p1 < 0 then p0, p1 else p1, p0 in
-			let e1l, e1h = min_max v1.point v1.orig_next_point in
-			let e2l, e2h = min_max v2.point v2.orig_next_point in
+			let e1l, e1h = min_max v1.point v1.next_point in
+			let e2l, e2h = min_max v2.point v2.next_point in
 			if e1l == e2l && e1h == e2h then 0
 			else
 				let poly = (Poly.insert_after (Poly.insert_after (Poly.insert_after (Poly.insert_after Poly.empty e1h) e1l) e2l) e2h) in
@@ -458,11 +446,9 @@ struct
 
 		(* Build a list of all the vertices, sorted *)
 		let make_queue ppoly =
-			let queue = Array.init ppoly.size (fun i -> i) in
+			let queue = Array.init (Array.length ppoly.vertices) (fun i -> i) in
 			Array.sort (fun v0 v1 ->
-				compare_point_y
-					(Cnt.unopt ppoly.vertices.(v0)).point
-					(Cnt.unopt ppoly.vertices.(v1)).point)
+				compare_point_y ppoly.vertices.(v0).point ppoly.vertices.(v1).point)
 				queue ;
 			queue
 
@@ -473,12 +459,8 @@ struct
 			if debug then (
 				Format.printf "@[queue : " ;
 				Array.iter (fun i ->
-					Format.printf "(@[%d : %a of kind %s, <-:%d ->:%d@]),@ "
-						i
-						Poly.Point.print (Cnt.unopt ppoly.vertices.(i)).point
-						(string_of_kind (Cnt.unopt ppoly.vertices.(i)).kind)
-						(Cnt.unopt ppoly.vertices.(i)).orig_prev
-						(Cnt.unopt ppoly.vertices.(i)).orig_next)
+					Format.printf "(@[%d : %a@]),@ "
+						i print_vertex ppoly.vertices.(i))
 					queue ;
 				Format.printf "@]@." ;
 			) ;
@@ -486,16 +468,10 @@ struct
 			(* Binary search tree of edges *)
 			let tree = ref Tree.empty in
 			
-			let print_edge fmt v =
-				Format.fprintf fmt "@[[%a %a %s %d]@]"
-					Poly.Point.print v.point
-					Poly.Point.print v.orig_next_point
-					(string_of_kind v.kind)
-					v.helper in
 			let print_tree () =
 				Format.printf "tree = @[" ;
 				Tree.iter !tree (fun edge ->
-					Format.printf "%a@ " print_edge edge) ;
+					Format.printf "%a@ " print_vertex edge) ;
 				Format.printf "@]@." in
 
 			let process_vertex i vertex =
@@ -503,14 +479,14 @@ struct
 				match vertex.kind with
 				| Start ->
 					vertex.helper <- i ;
-					if debug then Format.printf "Inserting edge %a into tree@." print_edge vertex ;
+					if debug then Format.printf "Inserting edge %a into tree@." print_vertex vertex ;
 					tree := Tree.insert !tree vertex ;
 					if debug then print_tree ()
 				| End ->
-					let prev = Cnt.unopt ppoly.vertices.((Cnt.unopt ppoly.vertices.(i)).orig_prev) in
+					let prev = ppoly.vertices.(ppoly.vertices.(i).prev) in
 					let h = prev.helper in
-					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					if debug then Format.printf "Removing prev %a from tree@." print_edge prev ;
+					if ppoly.vertices.(h).kind = Merge then add_diag ppoly i h ;
+					if debug then Format.printf "Removing prev %a from tree@." print_vertex prev ;
 					tree := Tree.remove !tree prev ;
 					if debug then print_tree ()
 				| Split ->
@@ -518,85 +494,115 @@ struct
 					add_diag ppoly i at_left.helper ;
 					at_left.helper <- i ;
 					vertex.helper <- i ;
-					if debug then Format.printf "Inserting edge %a into tree@." print_edge vertex ;
+					if debug then Format.printf "Inserting edge %a into tree@." print_vertex vertex ;
 					tree := Tree.insert !tree vertex ;
 					if debug then print_tree ()
 				| Merge ->
-					let prev = Cnt.unopt ppoly.vertices.((Cnt.unopt ppoly.vertices.(i)).orig_prev) in
+					let prev = ppoly.vertices.(ppoly.vertices.(i).prev) in
 					let h = prev.helper in
-					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					if debug then Format.printf "Removing prev %a from tree@." print_edge prev ;
+					if ppoly.vertices.(h).kind = Merge then add_diag ppoly i h ;
+					if debug then Format.printf "Removing prev %a from tree@." print_vertex prev ;
 					tree := Tree.remove !tree prev ;
 					let at_left = Tree.find_before !tree vertex in
 					let h' = at_left.helper in
-					if (Cnt.unopt ppoly.vertices.(h')).kind = Merge then add_diag ppoly i h' ;
+					if ppoly.vertices.(h').kind = Merge then add_diag ppoly i h' ;
 					at_left.helper <- i ;
 					if debug then print_tree ()
 				| Regular_down ->
-					let prev = Cnt.unopt ppoly.vertices.((Cnt.unopt ppoly.vertices.(i)).orig_prev) in
+					let prev = ppoly.vertices.(ppoly.vertices.(i).prev) in
 					let h = prev.helper in
-					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
-					if debug then Format.printf "Removing prev %a from tree@." print_edge prev ;
+					if ppoly.vertices.(h).kind = Merge then add_diag ppoly i h ;
+					if debug then Format.printf "Removing prev %a from tree@." print_vertex prev ;
 					tree := Tree.remove !tree prev ;
 					vertex.helper <- i ;
-					if debug then Format.printf "Inserting edge %a into tree@." print_edge vertex ;
+					if debug then Format.printf "Inserting edge %a into tree@." print_vertex vertex ;
 					tree := Tree.insert !tree vertex ;
 					if debug then print_tree ()
 				| Regular_up ->
 					let at_left = Tree.find_before !tree vertex in
 					let h = at_left.helper in
-					if (Cnt.unopt ppoly.vertices.(h)).kind = Merge then add_diag ppoly i h ;
+					if ppoly.vertices.(h).kind = Merge then add_diag ppoly i h ;
 					at_left.helper <- i ;
 					if debug then print_tree ()
 				in
-			Array.iter (fun i -> process_vertex i (Cnt.unopt ppoly.vertices.(i))) queue ;
+			Array.iter (fun i -> process_vertex i ppoly.vertices.(i)) queue ;
 			make_funpoly ppoly
 		
 		let triangulate polys =
 			let mono_polys = monotonize polys in
 			let triangulate_mono poly =
+				if debug then Format.printf "Triangulate poly %a@." Poly.print poly;
 				let ppoly = make_procpoly [poly] in
 				let queue = make_queue ppoly in
 				(* The stack of not already triangulated vertices *)
 				let stack = Stack.create () in
-				Stack.push queue.(0) stack ;
-				Stack.push queue.(1) stack ;
+				let print_stack () =
+					Format.printf "stack = @[" ;
+					Stack.iter (fun i -> Format.printf "%d@ " i) stack ;
+					Format.printf "@]@." in
+				let rec add_diag_to_all_but_last v =
+					let vs = Stack.pop stack in
+					if not (Stack.is_empty stack) then (
+						add_diag ppoly v vs ;
+						add_diag_to_all_but_last v
+					) in
 				let process_opposed_vertex v =
 					let last = Stack.top stack in
-					Stack.iter (fun vs -> add_diag ppoly v vs) stack ;
-					Stack.clear stack ;
+					if debug then Format.printf "Process vertex %d (%a),@ oposed to last (%d, %a)@."
+						v print_vertex ppoly.vertices.(v) last print_vertex ppoly.vertices.(v) ;
+					add_diag_to_all_but_last v ;
 					Stack.push last stack ;
 					Stack.push v stack in
-				let process_same_vertex v =
-					(* telles weither diag v,prev is inside the poly *)
+				let process_sameside_vertex v =
+					if debug then Format.printf "Process vertex %d (%a),@ same side than last (%d, %a)@."
+						v print_vertex ppoly.vertices.(v)
+						(Stack.top stack) print_vertex ppoly.vertices.(Stack.top stack) ;
 					let diag_is_inside prev last =
-						let pt_of v = (Cnt.unopt ppoly.vertices.(v)).point in
-						Poly.Point.compare_left (pt_of v) (pt_of last) (pt_of prev) > 0 in
+						let pt_of v = ppoly.vertices.(v).point in
+						let v_kind = ppoly.vertices.(v).kind in
+						let cmp = Poly.Point.compare_left (pt_of v) (pt_of last) (pt_of prev) in
+						v_kind = Regular_up && cmp > 0 || v_kind = Regular_down && cmp < 0 in
+					let last_pop = ref (Stack.pop stack) in
 					let rec aux last =
 						if not (Stack.is_empty stack) then
-							let prev = Stack.pop stack in
-							if diag_is_inside prev last then (
-								add_diag ppoly v prev ;
-								aux prev
-							) else
-								Stack.push prev stack in
-					aux (Stack.pop stack) in
-				let process_vertex i =
-					let v = queue.(i) in
-					(* Since ppoly is monotone, it only have one Start (at top),
-					 * one End (at end) and Regular_up/down vertices. So these are all
-					 * regular. *)
-					if (Cnt.unopt ppoly.vertices.(v)).kind <> (Cnt.unopt ppoly.vertices.(Stack.top stack)).kind then
-						process_opposed_vertex v
-					else
-						process_same_vertex v in
-				assert ((Cnt.unopt ppoly.vertices.(queue.(0))).kind = Start) ;
-				assert ((Cnt.unopt ppoly.vertices.(queue.(Array.length queue -1))).kind = End) ;
+							let top = Stack.top stack in
+							if diag_is_inside top last then (
+								add_diag ppoly v top ;
+								last_pop := Stack.pop stack ;
+								aux top
+							) in
+					aux !last_pop ;
+					Stack.push !last_pop stack ;
+					Stack.push v stack in
+				let process_vertex i v =
+					if debug then Format.printf "Processing queue.(%d) = %d (%a)@."
+						i v print_vertex ppoly.vertices.(v) ;
+					if i < 2 then Stack.push v stack
+					else if i = (Array.length queue) - 1 then (
+						(* Add diags to remaining points except last and first *)
+						if debug then Format.printf "Empty the stack@." ;
+						if not (Stack.is_empty stack) then
+							try (
+								ignore (Stack.pop stack) ;
+								add_diag_to_all_but_last v
+							) with Stack.Empty -> ()
+					) else (
+						(* Since ppoly is monotone, it only have one Start (at top),
+						 * one End (at end) and Regular_up/down vertices. So all vertices
+						 * on the stack are regular except for one Start. *)
+						let top = ppoly.vertices.(Stack.top stack) in
+						Format.printf "Stack top = %a, v = %a@."
+							print_vertex top print_vertex ppoly.vertices.(v) ;
+						if top.kind = Start || top.kind = ppoly.vertices.(v).kind then
+							process_sameside_vertex v
+						else
+							process_opposed_vertex v
+					) ;
+					if debug then print_stack () in
+				assert (ppoly.vertices.(queue.(0)).kind = Start) ;
+				assert (ppoly.vertices.(queue.(Array.length queue -1)).kind = End) ;
 				(* TODO: and that all others are regular *)
-				for i = 3 to (Array.length queue) - 2 do process_vertex i done ;
-				(* Add diagonals from last vertex to remaining vertices on stack *)
-				let last = queue.((Array.length queue)-1) in
-				Stack.iter (fun v -> add_diag ppoly last v) stack ;
+				Array.iteri process_vertex queue ;
 				make_funpoly ppoly in
 			List.flatten (List.map triangulate_mono (mono_polys))
 
