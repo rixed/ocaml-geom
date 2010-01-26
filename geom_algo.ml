@@ -621,15 +621,15 @@ struct
 	let extend_straight_to path point =
 		Path.extend path point [] Path.make_straight_line
 
-	let path_from_points = function
+	let path_of_points = function
 		| [] -> failwith "Cannot build path from no points"
 		| start::nexts ->
 			List.fold_left extend_straight_to (Path.empty start) nexts
 
-	let poly_from_points points =
+	let poly_of_points points =
 		List.fold_left Poly.insert_after Poly.empty points
 
-	let unit_square = poly_from_points
+	let unit_square = poly_of_points
 		(List.map Point.of_2scalars [ K.zero, K.zero ; K.one, K.zero ; K.one, K.one ; K.zero, K.one ])
 
 end (* module Algorithms *)

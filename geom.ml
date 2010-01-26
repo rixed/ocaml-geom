@@ -186,6 +186,7 @@ sig
 
 	(* These belongs to ALGO (rename to path_translate, etc) *)
 	(** Translates a path. *)
+	(* FIXME: Point here should be Vector *)
 	val translate : t -> Point.t -> t
 
 	(** Return the center position of a path. *)
@@ -193,6 +194,9 @@ sig
 
 	(** Scale a path relatively to a point. *)
 	val scale : t -> point -> scalar -> t
+
+	(** Scale a path along a given axis. *)
+	val scale_along : point (*center*) -> point (*axis*) -> scalar -> t -> t
 	
 	val iter : t -> scalar -> (point -> unit) -> unit
 end
@@ -226,8 +230,8 @@ sig
 	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.scalar -> Poly.Point.t
 
 	(* Some utilities *)
-	val path_from_points : Poly.Point.t list -> Path.t
-	val poly_from_points : Poly.Point.t list -> Poly.t
+	val path_of_points : Poly.Point.t list -> Path.t
+	val poly_of_points : Poly.Point.t list -> Poly.t
 	val unit_square : Poly.t
 end
 

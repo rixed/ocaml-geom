@@ -58,6 +58,7 @@ let rec draw_viewable camera =
 			aux child)
 			pos.children ;
 		GlMat.pop () in
+	GlMat.load_identity () ;
 	aux (to_root camera)
 
 (* Some simple positioners : *)
@@ -98,7 +99,6 @@ let display ?onclic painters =
 		GlMat.load_identity () ;
 		if w > h then (
 			let r = float w /. float h in
-			Format.printf "Ortho x %f %f@." (-.r) r ;
 			GlMat.ortho ~x:(-.r, r) ~y:(-1., 1.) ~z:(0.1, 10.) ;
 			screen_to_coord := 2. /. float h
 		) else (
@@ -111,18 +111,12 @@ let display ?onclic painters =
 	Glut.mouseFunc ~cb:(fun ~button ~state ~x ~y ->
 		if button = Glut.LEFT_BUTTON && state = Glut.DOWN then (
 			let xc, yc = unproject (x, y) in
-			Format.printf "unproject (%d, %d) -> (%f, %f)@." x y xc yc ;
 			last_clics := (xc, yc) :: !last_clics ;
 			Cnt.may onclic (fun f -> f (xc, yc)) ;
 			Glut.postRedisplay ()
 		)) ;
     Glut.displayFunc ~cb:(fun () ->
-		List.iter
-			(fun painter ->
-				GlMat.push () ;
-				painter () ;
-				GlMat.pop ())
-			painters ;
+		List.iter (fun painter -> painter ()) painters ;
 		Glut.swapBuffers()) ;
 	Glut.mainLoop ()
 

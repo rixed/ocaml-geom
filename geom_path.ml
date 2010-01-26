@@ -57,12 +57,25 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		let add_pos p (n, _, _) = Point.add p n in
 		Point.mul (List.fold_left add_pos path.start path.edges) (Point.K.inv (Point.K.of_int (size path)))
 
-	(* FIXME: move this under ALGO, and use scale_point *)
+	(* FIXME: move this under ALGO, and use scale_point. Wait, then algo would know internal structure ? *)
 	let scale path center scale =
 		let scale_me p = Point.add center (Point.mul (Point.sub p center) scale) in
 		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
 		{ start = scale_me path.start ; edges = List.map edge_scale path.edges }
 
+	let scale_along center axis ratio path =
+		let scale_me p =
+			(* decompose vector from center to p as one vector along axis and one perpendicular component. *)
+			let t = Point.sub p center in
+			let t_axis = Point.mul axis (Point.scalar_product axis t) in
+			let t_perp = Point.sub t t_axis in
+			(* now rescale axis component *)
+			let new_t_axis = Point.mul t_axis ratio in
+			(* and rebuild new p from these *)
+			Point.add center (Point.add new_t_axis t_perp) in
+		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
+		{ start = scale_me path.start ; edges = List.map edge_scale path.edges }
+		
 	(*
 	 * Interpolators
 	 *)

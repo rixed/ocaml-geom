@@ -1,9 +1,18 @@
 open Freetype
 let lib = init ()
-let font_file =
-	"/usr/share/fonts/truetype/Isabella.ttf"
-	(*"/usr/share/fonts/corefonts/arial.ttf"*)
-let (face, face_info) = new_face lib font_file 0
+let (face, face_info) =
+	let font_files = [
+		"/usr/share/fonts/truetype/Isabella.ttf" ;
+		"/usr/share/fonts/corefonts/arial.ttf" ] in
+	let rec init_first = function
+		| [] -> failwith "No working font file !"
+		| file :: others ->
+			try
+				let ret = new_face lib file 0 in
+				Format.printf "Using true type font file %s@." file ;
+				ret
+			with Not_found -> init_first others in
+	init_first font_files
 
 module Make
 	(Algo : Geom.ALGORITHMS)

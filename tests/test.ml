@@ -113,14 +113,15 @@ let () =
 		let to_draw =
 			(* Raw version *)
 			polys @
-			(* Convex partition *)
-			(List.map (fun poly -> Algo.convex_partition (Algo.translate_poly poly (V.of_3scalars (0., -3., 0.)))) polys) @
-			(* Triangulation *)
-			(List.map (fun poly -> Algo.triangulate (Algo.translate_poly poly (V.of_3scalars (0., -6., 0.)))) polys) @
 			(* Monotonization *)
-			(List.map (fun poly -> Algo.monotonize (Algo.translate_poly poly (V.of_3scalars (0., -9., 0.)))) polys)
+			(List.map (fun poly -> Algo.monotonize (Algo.translate_poly poly (V.of_3scalars (0., -3., 0.)))) polys) @
+			(* Triangulation *)
+			(List.map (fun poly -> Algo.triangulate (Algo.translate_poly poly (V.of_3scalars (0., -6., 0.)))) polys)
+			(* Convex partition *)
+(*			(List.map (fun poly -> Algo.convex_partition (Algo.translate_poly poly (V.of_3scalars (0., -3., 0.)))) polys) *)
 		in
-		Painter.draw_background :: (List.map (fun poly -> fun () -> Painter.draw_poly poly) to_draw) in
+		(fun () -> GlMat.load_identity () ; GlMat.translate ~z:(-1.) () ; GlMat.scale ~x:0.15 ~y:0.15 ()) ::
+			Painter.draw_background :: (List.map (fun poly -> fun () -> Painter.draw_poly poly) to_draw) in
 
 	View.display painters
 

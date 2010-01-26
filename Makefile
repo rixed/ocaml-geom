@@ -40,7 +40,7 @@ uninstall:
 reinstall: uninstall install
 
 check: geom.cma geom.cmxa
-	make -C tests all opt && tests/testpic.byte
+	make -C tests all opt && tests/testplot.byte
 
 # Common rules
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

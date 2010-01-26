@@ -25,7 +25,7 @@ struct
 		GlDraw.vertex3 (point3_of_vector v_stop) ;
 		GlDraw.vertex3 (point3_of_vector (Point.sub (Point.sub v_stop v1) v2)) ;
 		GlDraw.ends ()
-	
+
 	let draw_vector = draw_vector_in_color (0.6, 0.9, 0.9)
 
 	let draw_point p =
@@ -47,20 +47,19 @@ struct
 	
 	let draw_poly polys = List.iter draw_single_poly polys
 
-	let draw_grid_xy ~disp ~rgb (xmin, ymin) (xmax, ymax) =
-		GlDraw.color rgb ;
-		GlDraw.begins `lines ;
-		let rec auxx x =
-			GlDraw.vertex2 (x, ymin) ; GlDraw.vertex2 (x, ymax) ;
-			if x <= xmax then auxx (x +. disp) in
-		let rec auxy y =
-			GlDraw.vertex2 (xmin, y) ; GlDraw.vertex2 (xmax, y) ;
-			if y <= ymax then auxy (y +. disp) in
-		auxx xmin ;
-		auxy ymin ;
-		GlDraw.ends ()
-
 	let draw_background () =
+		let draw_grid_xy ~disp ~rgb (xmin, ymin) (xmax, ymax) =
+			GlDraw.color rgb ;
+			GlDraw.begins `lines ;
+			let rec auxx x =
+				GlDraw.vertex2 (x, ymin) ; GlDraw.vertex2 (x, ymax) ;
+				if x <= xmax then auxx (x +. disp) in
+			let rec auxy y =
+				GlDraw.vertex2 (xmin, y) ; GlDraw.vertex2 (xmax, y) ;
+				if y <= ymax then auxy (y +. disp) in
+			auxx xmin ;
+			auxy ymin ;
+			GlDraw.ends () in
 		GlClear.color (0.3, 0.3, 0.4) ;
 		GlClear.clear [`color] ;
 		let total_grid = draw_grid_xy (-10.0, -9.0) (10.0, 9.0) in (* FIXME: compute from prj+view *)
