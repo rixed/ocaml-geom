@@ -14,6 +14,7 @@ struct
 	let inv x = 1./.x
 	let of_float f = f
 	let to_float v = v
+	let to_string = string_of_float
 	let of_int = float_of_int
 	let half s = s *. 0.5
 	let double s = s *. 2.
@@ -38,6 +39,7 @@ struct
 	let inv s = div 1 s
 	let of_float f = int_of_float (f *. (float_of_int one))
 	let to_float s = (float_of_int s) /. (float_of_int one)
+	let to_string = string_of_int
 	let of_int = (lsl) Prec.v
 	let half s = s/2
 	let double s = s lsl 1
@@ -56,6 +58,11 @@ struct
 	type t = (scalar * scalar)
 
 	let zero = K.zero, K.zero
+	let make_unit = function
+		| 0 -> K.one, K.zero
+		| 1 -> K.zero, K.one
+		| _ -> zero
+	let of_2scalars v = v
 	let of_3scalars (x, y, _) = x, y
 	let to_3scalars (x, y) = x, y, K.zero
 	let add (x1, y1) (x2, y2) = K.add x1 x2, K.add y1 y2
@@ -63,7 +70,7 @@ struct
 	let mul (x, y) s = K.mul s x, K.mul s y
 	let scalar_product (x1, y1) (x2, y2) = K.add (K.mul x1 x2) (K.mul y1 y2)
 	let norm2 v = scalar_product v v
-	let repr3d (x, y) = (K.to_float x, K.to_float y, 0.)
+	let to_point3 (x, y) = (K.to_float x, K.to_float y, 0.)
 	let area (x1, y1) (x2, y2) = K.sub (K.mul x1 y2) (K.mul x2 y1)
 	let half (x, y) = K.half x, K.half y
 	let right_turn (x, y) = (K.neg y, x)

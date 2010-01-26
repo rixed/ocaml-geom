@@ -8,6 +8,7 @@ sig
 	val of_float : float -> t
 	val to_float : t -> float
 	val of_int : int -> t
+	val to_string : t -> string
 
 	val add : t -> t -> t
 	val sub : t -> t -> t
@@ -78,7 +79,9 @@ sig
 	type scalar = K.t
 
 	val zero : t
+	val make_unit : int -> t
 	val of_3scalars : scalar * scalar * scalar -> t
+	val of_2scalars : scalar * scalar -> t
 	val to_3scalars : t -> scalar * scalar * scalar
 	val add : t -> t -> t
 	val sub : t -> t -> t
@@ -86,7 +89,7 @@ sig
 	val half : t -> t
 	val scalar_product : t -> t -> scalar
 	val norm2 : t -> scalar
-	val repr3d : t -> (float * float * float)
+	val to_point3 : t -> Gl.point3
 	val area : t -> t -> scalar
 	val right_turn : t -> t	(** Return the same but turned in anticlockwise direction of PI/2 *)
 	val eq : t -> t -> bool
@@ -172,8 +175,8 @@ sig
 	(** Return the empty path starting at given position. *)
 	val empty : point -> t
 
-	(** Extend a path. *)
-	val extend : t -> point -> point list -> interpolator -> t
+	(** Extend a path *)
+	val extend : t -> point (* next one *) -> point list (* control pts *) -> interpolator -> t
 
 	(** Build a path composed of the first one followed by the second one. *)
 	val concat : t -> t -> t
@@ -221,6 +224,11 @@ sig
 	val poly_of_path : Path.t -> Path.Point.scalar -> Poly.t
 
 	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.scalar -> Poly.Point.t
+
+	(* Some utilities *)
+	val path_from_points : Poly.Point.t list -> Path.t
+	val poly_from_points : Poly.Point.t list -> Poly.t
+	val unit_square : Poly.t
 end
 
 module type CONVEX_HULL_SET =

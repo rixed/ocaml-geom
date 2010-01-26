@@ -111,3 +111,7 @@ let unopt = function
 	| Some x -> x
 	| None -> failwith "Cannot unopt None"
 
+let may o f = match o with
+	| Some x -> f x
+	| None -> ()
+

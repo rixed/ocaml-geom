@@ -1,8 +1,8 @@
 open Freetype
 let lib = init ()
 let font_file =
-	(*"/usr/share/fonts/truetype/Isabella.ttf"*)
-	"/usr/share/fonts/corefonts/arial.ttf"
+	"/usr/share/fonts/truetype/Isabella.ttf"
+	(*"/usr/share/fonts/corefonts/arial.ttf"*)
 let (face, face_info) = new_face lib font_file 0
 
 module Make

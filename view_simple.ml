@@ -7,7 +7,7 @@ struct
 
 	let width = 0.05
 
-	let point3_of_vector v = Point.repr3d v
+	let point3_of_vector v = Point.to_point3 v
 
 	let draw_vector_in_color rgb p v =
 		GlDraw.color rgb;
@@ -30,7 +30,7 @@ struct
 
 	let draw_point p =
 		let point_color = 0.8, 0.7, 0.3 in
-		let (x, y, z) = point3_of_vector p in
+		let x, y, z = point3_of_vector p in
 		GlDraw.color point_color ;
 		GlDraw.begins `lines ;
 		GlDraw.vertex3 (x -. width, y -. width, z) ;

@@ -40,7 +40,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	let extend path next ctrls interp = (match path.edges with
 		| (pt, _, _) :: _ -> if Point.eq pt next then
 			Format.printf "Path edge of no length at point %a@\n" Point.print pt
-		| _ -> () ) ;
+		| _ -> ()) ;
 		{ path with edges = path.edges @ [next, ctrls, interp] }
 
 	let concat path1 path2 = { start = path1.start ; edges = path1.edges @ path2.edges }

@@ -41,24 +41,26 @@ module Algorithms
 struct
 	module Poly = P_
 	module Path = Path_
+	module Point = Poly.Point
+	module K = Point.K
 
 	let debug = true
 
 	let scale_point point center ratio =
-		Poly.Point.add center (Poly.Point.mul (Poly.Point.sub point center) ratio)
+		Point.add center (Point.mul (Point.sub point center) ratio)
 
 	let next_pt p = Poly.get (Poly.next p)
 	let prev_pt p = Poly.get (Poly.prev p)
 
 	let area polys =
 		List.fold_left (fun sum poly ->
-			Poly.Point.K.add sum (Poly.fold poly (fun p s ->
-				Poly.Point.K.add s (Poly.Point.area (Poly.get p) (Poly.get (Poly.next p))))
-				Poly.Point.K.zero))
-		Poly.Point.K.zero polys
+			K.add sum (Poly.fold poly (fun p s ->
+				K.add s (Point.area (Poly.get p) (Poly.get (Poly.next p))))
+				K.zero))
+		K.zero polys
 
 	let is_convex_at prev point next =
-		Poly.Point.compare_left prev point next >= 0
+		Point.compare_left prev point next >= 0
 
 	let iter_concave poly f =
 		Poly.iter poly (fun pol ->
@@ -71,12 +73,12 @@ struct
 		) with Exit -> false
 
 	let in_between prev focus next target =
-		let cmp1 = (Poly.Point.compare_left focus target prev) > 0
-		and cmp2 = (Poly.Point.compare_left focus target next) > 0 in
+		let cmp1 = (Point.compare_left focus target prev) > 0
+		and cmp2 = (Point.compare_left focus target next) > 0 in
 		if cmp1 then
-			not cmp2 || (Poly.Point.compare_left focus prev next) > 0
+			not cmp2 || (Point.compare_left focus prev next) > 0
 		else
-			not cmp2 && (Poly.Point.compare_left focus prev next) > 0
+			not cmp2 && (Point.compare_left focus prev next) > 0
 
 
 	(* Check weither the target point is toward the interior of the poly at the focused point *)
@@ -92,7 +94,7 @@ struct
 				let q1 = next_pt pol in
 				if q0 != p0 && q0 != p1 &&
 				   q1 != p0 && q1 != p1 &&
-				   Poly.Point.intersect p0 p1 q0 q1 then raise Exit) ;
+				   Point.intersect p0 p1 q0 q1 then raise Exit) ;
 			true
 		) with Exit -> false
 	
@@ -136,7 +138,7 @@ struct
 		let best_segment = ref None in
 		let best_dist = ref None in	(* Cache best_segment's length *)
 		let choose_best pol0 pol1 thing =
-			let dist = Poly.Point.norm2 (Poly.Point.sub
+			let dist = Point.norm2 (Point.sub
 				(Poly.get pol0)
 				(Poly.get pol1)) in
 			match !best_dist with
@@ -182,8 +184,8 @@ struct
 				(* We must copy the points as we disallow a poly to store twice the same physical point *)
 				Poly.insert_after
 					(Poly.insert_after !res
-						(Poly.Point.copy (Poly.get poly1)))
-					(Poly.Point.copy (Poly.get poly0)) in
+						(Point.copy (Poly.get poly1)))
+					(Point.copy (Poly.get poly0)) in
 			let best_connection poly1 =
 				(* Look for the best merging line *)
 				let choose_best, pick_best = make_chooser () in
@@ -251,7 +253,7 @@ struct
 				Poly.iter poly (fun p ->
 					let q0 = Poly.get p in
 					let q1 = next_pt p in
-					if Poly.Point.intersect ~closed:false p0 p1 q0 q1 then raise Exit) ;
+					if Point.intersect ~closed:false p0 p1 q0 q1 then raise Exit) ;
 				false
 			) with Exit -> true in
 		try (
@@ -274,7 +276,7 @@ struct
 		!new_poly
 
 	let translate_single_poly poly vec =
-		transform poly (fun point -> Poly.Point.add point vec)
+		transform poly (fun point -> Point.add point vec)
 	
 	let translate_poly polys vec = List.map (fun p -> translate_single_poly p vec) polys
 
@@ -287,7 +289,7 @@ struct
 		let poly = ref Poly.empty in
 		Path.iter path res (fun pt ->
 			if not (Poly.is_empty !poly) then (
-				if Poly.Point.eq (Poly.get !poly) pt then Format.printf "Adding twice point %a@\n" Poly.Point.print pt
+				if Point.eq (Poly.get !poly) pt then Format.printf "Adding twice point %a@\n" Point.print pt
 			) ;
 			poly := Poly.insert_after !poly pt) ;
 		!poly
@@ -306,8 +308,8 @@ struct
 		(* The algorithm below is taken from Comp. Geom. by de Berg, van Kreveld etc
 		 * where Y is taken to grow downward. *)
 		let compare_point_y p1 p2 =
-			let cmpy = Poly.Point.compare_y p1 p2 in
-			if cmpy <> 0 then -cmpy else Poly.Point.compare_x p1 p2
+			let cmpy = Point.compare_y p1 p2 in
+			if cmpy <> 0 then -cmpy else Point.compare_x p1 p2
 
 		let kind_of_point poly =
 			let prev, point, next = prev_pt poly, Poly.get poly, next_pt poly in
@@ -323,8 +325,8 @@ struct
 					if convex then Start else Split
 
 		type vertex = {
-			point : Poly.Point.t ;
-			next_point : Poly.Point.t ;	(* so that edges are easier to compare *)
+			point : Point.t ;
+			next_point : Point.t ;	(* so that edges are easier to compare *)
 			prev : int ;
 			next : int ;
 			kind : vertex_kind ;	(* true only on the original ppoly, not resulting one *)
@@ -334,8 +336,8 @@ struct
 
 		let print_vertex fmt v =
 			Format.fprintf fmt "@[{fr:%a to:%a k:%s h:%d <-:%d ->:%d diags:["
-				Poly.Point.print v.point
-				Poly.Point.print v.next_point
+				Point.print v.point
+				Point.print v.next_point
 				(string_of_kind v.kind)
 				v.helper v.prev v.next ;
 			List.iter (fun i -> Format.fprintf fmt "%d;" i) v.diags ;
@@ -432,7 +434,7 @@ struct
 			if e1l == e2l && e1h == e2h then 0
 			else
 				let poly = (Poly.insert_after (Poly.insert_after (Poly.insert_after (Poly.insert_after Poly.empty e1h) e1l) e2l) e2h) in
-				let cmp = Poly.Point.K.compare (area [poly]) Poly.Point.K.zero in
+				let cmp = K.compare (area [poly]) K.zero in
 				if cmp <> 0 then cmp
 				else
 					(* Can happen if e1 and e2 share a vertex, or are colinear.
@@ -475,7 +477,7 @@ struct
 				Format.printf "@]@." in
 
 			let process_vertex i vertex =
-				if debug then Format.printf "Process point %d at %a of kind %s :@." i Poly.Point.print vertex.point (string_of_kind vertex.kind) ;
+				if debug then Format.printf "Process point %d at %a of kind %s :@." i Point.print vertex.point (string_of_kind vertex.kind) ;
 				match vertex.kind with
 				| Start ->
 					vertex.helper <- i ;
@@ -560,7 +562,7 @@ struct
 					let diag_is_inside prev last =
 						let pt_of v = ppoly.vertices.(v).point in
 						let v_kind = ppoly.vertices.(v).kind in
-						let cmp = Poly.Point.compare_left (pt_of v) (pt_of last) (pt_of prev) in
+						let cmp = Point.compare_left (pt_of v) (pt_of last) (pt_of prev) in
 						v_kind = Regular_up && cmp > 0 || v_kind = Regular_down && cmp < 0 in
 					let last_pop = ref (Stack.pop stack) in
 					let rec aux last =
@@ -614,6 +616,21 @@ struct
 			
 	let convex_partition polys = convex_partition_slow polys
 
+	(* Utilities *)
+
+	let extend_straight_to path point =
+		Path.extend path point [] Path.make_straight_line
+
+	let path_from_points = function
+		| [] -> failwith "Cannot build path from no points"
+		| start::nexts ->
+			List.fold_left extend_straight_to (Path.empty start) nexts
+
+	let poly_from_points points =
+		List.fold_left Poly.insert_after Poly.empty points
+
+	let unit_square = poly_from_points
+		(List.map Point.of_2scalars [ K.zero, K.zero ; K.one, K.zero ; K.one, K.one ; K.zero, K.one ])
 
 end (* module Algorithms *)
 
