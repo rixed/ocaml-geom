@@ -8,9 +8,11 @@ OCAMLOPTFLAGS = $(INCS) -S -w Ae -g
 OCAMLFLAGS    = $(INCS) -w Ae -g
 
 SOURCES  = cnt.ml cnt_impl.ml \
-	geom.ml geom_algebr.ml geom_shapes.ml geom_path.ml geom_algo.ml geom_text.ml \
+	geom.ml geom_algebr.ml geom_shapes.ml geom_path.ml geom_algo.ml \
+	text_intf.ml text_impl.ml \
 	view.ml view_simple.ml turtle.ml \
-	pic_intf.ml pic_impl.ml plot_intf.ml plot_impl.ml
+	pic_intf.ml pic_impl.ml \
+	plot_intf.ml plot_impl.ml
 OBJECTS  = $(SOURCES:.ml=.cmo)
 XOBJECTS = $(OBJECTS:.cmo=.cmx)
 
@@ -40,7 +42,7 @@ uninstall:
 reinstall: uninstall install
 
 check: geom.cma geom.cmxa
-	make -C tests all opt && tests/testplot.byte
+	make -C tests all opt && tests/test_word.byte
 
 # Common rules
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

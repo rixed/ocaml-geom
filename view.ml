@@ -63,17 +63,17 @@ let rec draw_viewable camera =
 
 (* Some simple positioners : *)
 
-let identity = [|
+let identity () = [|
 	[| 1. ; 0. ; 0. ; 0. |] ; [| 0. ; 1. ; 0. ; 0. |] ;
 	[| 0. ; 0. ; 1. ; 0. |] ; [| 0. ; 0. ; 0. ; 1. |]
 |]
 
-let translator { contents = x, y, z } = [|
+let translator { contents = x, y, z } () = [|
 	[| 1. ; 0. ; 0. ; 0. |] ; [| 0. ; 1. ; 0. ; 0. |] ;
 	[| 0. ; 0. ; 1. ; 0. |] ; [| x ; y ; z ; 1. |]
 |]
 
-let scaler { contents = x, y, z } = [|
+let scaler { contents = x, y, z } () = [|
 	[| x ; 0. ; 0. ; 0. |] ; [| 0. ; y ; 0. ; 0. |] ;
 	[| 0. ; 0. ; z ; 0. |] ; [| 0. ; 0. ; 0. ; 1. |]
 |]

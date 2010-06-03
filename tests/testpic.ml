@@ -7,6 +7,8 @@ module Path = Geom_path.Make (Point)
 module Pic = Pic_impl.Make (Poly) (Path)
 module Algo = Geom_algo.Algorithms (Poly) (Path)
 
+let _ = Format.printf "1\n"
+
 let point_of_floats (x, y) = Point.of_2scalars (K.of_float x, K.of_float y)
 let poly_of_floats floats = Algo.poly_of_points (List.map point_of_floats floats)
 let path_of_floats floats = Algo.path_of_points (List.map point_of_floats floats)
@@ -20,25 +22,24 @@ let root =
 	let sky = Pic.Poly (poly_of_floats [ -2., 0. ; 2., 0. ; 2., 1. ; -2., 1. ]), uni_gc (0.4, 0.4, 1.) in
 	View.make_viewable
 		(fun () -> Pic.draw [ ground ; sky ])
-		(fun () -> View.identity)
+		View.identity
 
 let small_sq_pos = ref (-1.5, 0.2, 0.)
 let half_unit_square = Algo.scale_single_poly Algo.unit_square Point.zero (K.half K.one)
 let small_sq = View.make_viewable ~parent:root
 	(fun () -> Pic.draw [ Pic.Poly half_unit_square, uni_gc (1., 1., 0.) ])
-	(fun () -> View.translator small_sq_pos)
+	(View.translator small_sq_pos)
 
 let smaller_sq = View.make_viewable ~parent:small_sq
 	(fun () -> Pic.draw [ Pic.Poly half_unit_square, uni_gc (1., 0., 1.)])
-	(fun () -> View.translator (ref (0.5,0.,0.)))
+	(View.translator (ref (0.5,0.,0.)))
 
 let camera_pos = ref (0., 0., 0.5)
-let camera = View.make_viewable ~parent:root (fun () -> ()) (fun () -> View.translator camera_pos)
+let camera = View.make_viewable ~parent:root (fun () -> ()) (View.translator camera_pos)
+
+let _ = Format.printf "2\n"
 
 let () = View.display
 	~onclic:(fun (x, y) -> small_sq_pos := (x, y, 0.))
-	[
-(*		(fun () -> GlClear.clear [`color]) ;*)
-		(fun () -> View.draw_viewable camera)
-	]
+	[ (fun () -> View.draw_viewable camera) ]
 

@@ -5,6 +5,8 @@ sig
 	val zero : t
 	val one : t
 	val compare : t -> t -> int
+	val min : t -> t -> t
+	val max : t -> t -> t
 	val of_float : float -> t
 	val to_float : t -> float
 	val of_int : int -> t
@@ -94,6 +96,13 @@ sig
 	val right_turn : t -> t	(** Return the same but turned in anticlockwise direction of PI/2 *)
 	val eq : t -> t -> bool
 	
+	type bbox
+	val empty_bbox : bbox
+	val make_bbox : t -> bbox
+	val bbox_union : bbox -> bbox -> bbox
+	val bbox_add_vec : bbox -> t -> bbox
+	val bbox_translate : bbox -> t -> bbox
+	
 	val print : Format.formatter -> t -> unit
 end
 
@@ -158,12 +167,12 @@ end
 module type PATH =
 sig
 	type t
-	
-	(** Types used for path geometry. *)
+
 	module Point : POINT
+
 	type point = Point.t
 	type scalar = Point.scalar
-
+	
 	(** Function that, given a starting point, a stopping point, a control points list
 	    and a resolution, will return a list of intermediary points going from the
 	    starting point to the destination at the given resolution. *)
@@ -187,7 +196,7 @@ sig
 	(* These belongs to ALGO (rename to path_translate, etc) *)
 	(** Translates a path. *)
 	(* FIXME: Point here should be Vector *)
-	val translate : t -> Point.t -> t
+	val translate : t -> point -> t
 
 	(** Return the center position of a path. *)
 	val center : t -> point
@@ -199,12 +208,15 @@ sig
 	val scale_along : point (*center*) -> point (*axis*) -> scalar -> t -> t
 	
 	val iter : t -> scalar -> (point -> unit) -> unit
+	
+	val bbox : t -> Point.bbox
 end
 
 module type ALGORITHMS =
 sig
 	module Poly : POLYGON
 	module Path : PATH with module Point = Poly.Point
+
 	val area : Poly.t list -> Poly.Point.scalar
 	val is_convex_at : Poly.Point.t -> Poly.Point.t -> Poly.Point.t -> bool
 	val is_convex : Poly.t -> bool
@@ -226,7 +238,6 @@ sig
 	val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.scalar -> Poly.t
 	(** Close the path and convert it to a Polygon. *)
 	val poly_of_path : Path.t -> Path.Point.scalar -> Poly.t
-
 	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.scalar -> Poly.Point.t
 
 	(* Some utilities *)
@@ -249,10 +260,3 @@ sig
 	val convex_hull : PXYL.t -> Poly.t
 end
 
-module type TEXT =
-sig
-	module Poly : POLYGON
-	module Path : PATH with module Point = Poly.Point
-
-	val poly_of_glyph : int -> Path.scalar -> Poly.t list
-end

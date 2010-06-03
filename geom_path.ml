@@ -130,4 +130,10 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		in
 		aux path.start path.edges
 
+	let bbox path =
+		let union_ctls bbox ctl = Point.bbox_add_vec bbox ctl in
+		let union_edges bbox (dest, ctls, _) =
+			List.fold_left union_ctls (Point.bbox_add_vec bbox dest) ctls in
+		List.fold_left union_edges (Point.make_bbox path.start) path.edges
+
 end

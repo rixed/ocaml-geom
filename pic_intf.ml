@@ -14,5 +14,5 @@ sig
 	type t = (elmt * gc) list
 
 	val draw : ?prec:Poly.Point.K.t -> t -> unit
-	val bbox : t -> (Poly.Point.t * Poly.Point.t)
+	val bbox : t -> Poly.Point.bbox
 end	

@@ -35,5 +35,5 @@ struct
 				| Dot point -> draw_point point in
 		List.iter draw_elmt pic
 
-	let bbox _pic = Point.zero, Point.zero (* TODO *)
+	let bbox _pic = Point.empty_bbox (* TODO *)
 end

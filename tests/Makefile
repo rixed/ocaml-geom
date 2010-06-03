@@ -8,7 +8,7 @@ REQUIRES = geom
 
 .PHONY: all clean
 
-PROGRAMS = test.byte testpic.byte testplot.byte
+PROGRAMS = test.byte testpic.byte testplot.byte test_word.byte
 
 all: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)
@@ -33,7 +33,7 @@ opt: $(PROGRAMS:.byte=.opt)
 
 # Clean up
 clean:
-	rm -f *.cm[ioxa] *.cmxa *.a *.s .depend
+	rm -f *.cm[ioxa] *.cmxa *.a *.s *.o *.byte *.opt .depend
 
 # Dependencies
 .depend: *.ml

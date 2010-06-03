@@ -6,6 +6,8 @@ struct
 	let zero = 0.
 	let one = 1.
 	let compare = compare	(* From Pervasive *)
+	let min = min
+	let max = max
 	let add = (+.)
 	let sub = (-.)
 	let mul = ( *.)
@@ -31,6 +33,8 @@ struct
 	let zero = 0
 	let one = 1 lsl Prec.v
 	let compare = compare
+	let min = min
+	let max = max
 	let add = (+)
 	let sub = (-)
 	let mul a b = (a * b) asr Prec.v
@@ -75,6 +79,38 @@ struct
 	let half (x, y) = K.half x, K.half y
 	let right_turn (x, y) = (K.neg y, x)
 	let eq (x1, y1) (x2, y2) = K.compare x1 x2 = 0 && K.compare y1 y2 = 0
+	
+	let to_upper, to_lower =
+		let select choose vecs =
+			let rec aux ((best_x, best_y) as best) = function
+				| [] -> best
+				| (x, y) :: others ->
+					aux (choose best_x x, choose best_y y) others in
+			aux (List.hd vecs) (List.tl vecs) in
+		select K.max, select K.min
+
+	(* BBOX *)
+	
+	type bbox = (t * t) option
+	
+	let empty_bbox = None
+	
+	let make_bbox v = Some (v, v)
+	
+	let bbox_union b1 b2 = match b1 with
+		| None -> b2
+		| Some (min1, max1) -> (match b2 with
+			| None -> b1
+			| Some (min2, max2) ->
+				Some (to_lower [ min1 ; min2 ], to_upper [ max1 ; max2 ]))
+	
+	let bbox_add_vec bbox vec = bbox_union bbox (make_bbox vec)
+
+	let bbox_translate bbox vec = match bbox with
+		| None -> None
+		| Some (min, max) -> Some (add min vec, add max vec)
+	
+	(* Formater *)
 
 	let print ff (x, y) =
 		Format.pp_open_box ff 0 ;

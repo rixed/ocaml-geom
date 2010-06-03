@@ -4,22 +4,22 @@ module Point = Geom_shapes.Point (V)
 module Ring = Cnt_impl.GenRing (struct type t = Point.t end)
 module Poly = Geom_shapes.Polygon (Point) (Ring)
 module Path = Geom_path.Make (Point)
-module Pic = Pic_impl.Make (Poly) (Path)
-module Plot = Plot_impl.Make (Pic)
-module Algo = Geom_algo.Algorithms (Poly) (Path)
 module Painter = View_simple.Make_painter (Poly)
+module Glyph = Text_impl.Glyph (Poly) (Path)
+module Word = Text_impl.Word (Glyph)
 
 let background = View.make_viewable Painter.draw_background View.identity
 
-let plot_view =
-	let plot = Plot.make_dataset ~label:"temp" (fun f ->
-		let sq x = x *. x in
-		for x = -5 to 5 do f (float x) (sq (float x)) done) in
-	View.make_viewable ~parent:background (fun () -> Pic.draw (Plot.pic_of_plot ~scale:(2., 1.) [plot])) View.identity
+let word_polys =
+	let word = Word.make "T.AVO" in
+	Word.to_poly word 1.
+
+let word_view =
+	let painter = (fun () -> Painter.draw_poly word_polys) in
+	View.make_viewable ~parent:background painter (View.scaler (ref (0.02, 0.02, 0.02)))
 
 let camera_pos = ref (1., 0.2, 0.5)
 let camera = View.make_viewable ~parent:background (fun () -> ()) (View.translator camera_pos)
 
 let () = View.display [ (fun () -> View.draw_viewable camera) ]
-
 
