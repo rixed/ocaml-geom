@@ -5,9 +5,9 @@ let lib = init ()
 let (face, face_info) =
 	let font_files = [
 		"/usr/share/fonts/truetype/Isabella.ttf" ;
+		"/usr/share/fonts/corefonts/arial.ttf" ;
 		"/usr/share/fonts/ttf-bitstream-vera/Vera.ttf" ;
-		"/usr/share/fonts/alee-fonts/Bandal.ttf" ;
-		"/usr/share/fonts/corefonts/arial.ttf" ] in
+		"/usr/share/fonts/alee-fonts/Bandal.ttf" ] in
 	let rec init_first = function
 		| [] -> failwith "No working font file !"
 		| file :: others ->
@@ -29,13 +29,14 @@ struct
 	module Algo = Geom_algo.Algorithms (Poly) (Path)
 
 	type t = {
-		number : int ;
+		index : char_index ;
 		paths : Path.t list ;
 		advance_x : float ;
 		advance_y : float }
 
-	let make number = 
-		let (advance_x, advance_y) = load_char face number [ Load_no_scale ; Load_no_hinting ] in
+	let make chr =
+		let index = get_char_index face (int_of_char chr) in
+		let (advance_x, advance_y) = load_glyph face index [ Load_no_scale ; Load_no_hinting ] in
 		let outline = get_outline_contents face in
 		let to_point (x, y) =
 			let xs = Poly.Point.K.of_float x in
@@ -71,7 +72,7 @@ struct
 			for c = 0 to outline.n_contours-1 do paths := get_path c :: !paths done ;
 			!paths in
 		{
-			number = number ;
+			index = index ;
 			paths = get_all_paths () ;
 			advance_x = advance_x ;
 			advance_y = advance_y }
@@ -94,9 +95,15 @@ struct
 				extend_bbox (Point.bbox_union current (Path.bbox path)) other in
 		extend_bbox Point.empty_bbox glyph.paths
 	
-	let advance prev_glyph next_glyph =
-		let kern_vec = get_kerning face prev_glyph.number next_glyph.number Kerning_default in
-		Point.K.of_float (prev_glyph.advance_x +. kern_vec.ft_x)
+	let advance ?(orientation=Horizontal) prev_glyph next_glyph =
+		match orientation with
+		| Horizontal ->
+			let kern_vec = get_kerning face prev_glyph.index next_glyph.index Kerning_unscaled in
+			Point.of_2scalars
+				(Point.K.of_float (prev_glyph.advance_x +. kern_vec.ft_x),
+				 Point.K.of_float kern_vec.ft_y)
+		| Vertical ->
+			Point.of_2scalars (Point.K.zero, Point.K.of_float prev_glyph.advance_y)
 end
 
 module Word
@@ -118,13 +125,12 @@ struct
 			else
 				let c = str.[i] in
 				(* TODO: use also previous char and previous pen_position to perform kerning *)
-				let glyph = Glyph.make (int_of_char c) in
+				let glyph = Glyph.make c in
 				let adv = match word with
 				| [] -> pos
 				| (prev_g, _) :: _ ->
-					let advance = Glyph.advance prev_g glyph in
-					let pos_disp = Point.make_unit (if orientation = Horizontal then 0 else 1) in
-					Point.add pos (Point.mul pos_disp advance) in
+					let advance = Glyph.advance ~orientation prev_g glyph in
+					Point.add pos advance in
 				let next_word = (glyph, adv) :: word in
 				add_char (i+1) next_word adv in
 		add_char 0 [] Point.zero

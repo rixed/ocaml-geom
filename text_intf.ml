@@ -6,12 +6,11 @@ sig
 	module Path : Geom.PATH with module Point = Poly.Point
 	type t
 
-	val make : int -> t
+	val make : char -> t
 	val to_poly : t -> Path.scalar -> Poly.t list
 	val bbox : t -> Poly.Point.bbox
-	val advance : t -> t -> Path.scalar
-(*	val line_gap : t -> Path.scalar
-	val kerning : t -> t -> Poly.Point.t *)
+	val advance : ?orientation:orientation -> t -> t -> Poly.Point.t
+(*	val line_gap : t -> Path.scalar *)
 end
 
 module type WORD =

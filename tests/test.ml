@@ -36,7 +36,7 @@ let square = make_poly [|
 let test_path = 
 	Path.extend (Path.empty (make_point (-1.) 1.)) (make_point 1. 1.) [ make_point (-1.) (-2.) ; make_point 1. (-2.) ] Path.make_bezier_curve
 
-let letter_a = Algo.scale_poly (Glyph.to_poly (Glyph.make 97) 1.2) P.zero 0.1
+let letter_a = Algo.scale_poly (Glyph.to_poly (Glyph.make 'a') 1.2) P.zero 0.1
 
 let polys =
 	let polys_list = [
