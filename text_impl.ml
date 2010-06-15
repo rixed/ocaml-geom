@@ -124,7 +124,7 @@ struct
 				word
 			else
 				let c = str.[i] in
-				(* TODO: use also previous char and previous pen_position to perform kerning *)
+				(* TODO: use also previous char to choose a better glyph for 2 successive chars *)
 				let glyph = Glyph.make c in
 				let adv = match word with
 				| [] -> pos

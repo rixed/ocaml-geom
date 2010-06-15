@@ -8,7 +8,7 @@ REQUIRES = geom
 
 .PHONY: all clean
 
-PROGRAMS = test.byte testpic.byte testplot.byte test_word.byte
+PROGRAMS = test.byte testpic.byte testplot.byte test_word.byte test_typeset.byte
 
 all: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)

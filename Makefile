@@ -12,7 +12,9 @@ SOURCES  = cnt.ml cnt_impl.ml \
 	text_intf.ml text_impl.ml \
 	view.ml view_simple.ml turtle.ml \
 	pic_intf.ml pic_impl.ml \
-	plot_intf.ml plot_impl.ml
+	plot_intf.ml plot_impl.ml \
+	typeset_intf.ml typeset_impl.ml
+
 OBJECTS  = $(SOURCES:.ml=.cmo)
 XOBJECTS = $(OBJECTS:.cmo=.cmx)
 

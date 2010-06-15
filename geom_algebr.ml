@@ -21,7 +21,8 @@ struct
 	let half s = s *. 0.5
 	let double s = s *. 2.
 	let square s = s *. s
-	let sqrt s = s (*sqrt*)
+	let sqrt = sqrt
+	let abs = abs_float
 	let print ff s = Format.pp_print_float ff s
 end
 
@@ -49,6 +50,7 @@ struct
 	let double s = s lsl 1
 	let square s = mul s s
 	let sqrt s = of_float (sqrt (to_float s))
+	let abs = abs
 	let print ff s = Format.fprintf ff "%d.%d" (s asr Prec.v) (s land (one-1))
 end
 
@@ -66,6 +68,7 @@ struct
 		| 0 -> K.one, K.zero
 		| 1 -> K.zero, K.one
 		| _ -> zero
+	let nth v = function 0 -> fst v | 1 -> snd v | _ -> failwith "No such dimension"
 	let of_2scalars v = v
 	let of_3scalars (x, y, _) = x, y
 	let to_3scalars (x, y) = x, y, K.zero

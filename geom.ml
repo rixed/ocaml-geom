@@ -22,6 +22,7 @@ sig
 	val double : t -> t
 	val square : t -> t
 	val sqrt : t -> t
+	val abs : t -> t
 
 	val print : Format.formatter -> t -> unit
 end
@@ -82,6 +83,7 @@ sig
 
 	val zero : t
 	val make_unit : int -> t
+	val nth : t -> int -> scalar
 	val of_3scalars : scalar * scalar * scalar -> t
 	val of_2scalars : scalar * scalar -> t
 	val to_3scalars : t -> scalar * scalar * scalar
