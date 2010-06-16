@@ -9,5 +9,7 @@ module Point = Geom_shapes.Point (Vec)
 module Ring = Cnt_impl.GenRing (struct type t = Point.t end)
 module Poly = Geom_shapes.Polygon (Point) (Ring)
 module Path = Geom_path.Make (Point)
+module Pic = Pic_impl.Make (Poly) (Path)
 module Algo = Geom_algo.Algorithms (Poly) (Path)
 
+let () = Printf.printf "one = %d\n%!" K.one

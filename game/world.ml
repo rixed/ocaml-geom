@@ -1,6 +1,7 @@
 open Mlrocket
 
 (* Note : the space is incurved the other way around, so that the ground surrounds us. *)
+let radius = K.of_int 10
 
 type t =
 	{ ground : Path.t ;
@@ -20,7 +21,6 @@ let make_ground () =
 		[ upper_left ; upper_right ] Path.make_bezier_curve in
 	let circle = Path.extend
 		upper_circle left [ bottom_right ; bottom_left ] Path.make_bezier_curve in
-	let radius = K.of_int 10 in
 	Path.scale circle Point.zero radius
 
 let make () =
