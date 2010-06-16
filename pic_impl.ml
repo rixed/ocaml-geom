@@ -9,7 +9,7 @@ struct
 	module Path = Path_
 	module Point = Poly.Point
 
-	type elmt = Poly of Poly.t | Path of Path.t | Dot of Point.t
+	type elmt = Poly of Poly.t | Path of Path.t | Dot of Point.t | Clear
 
 	type t = (elmt * gc) list
 
@@ -29,10 +29,13 @@ struct
 				Cnt.may gc.fill_color (draw_iter_prim (Path.iter path prec) `line_strip) in
 			let draw_point point =
 				Cnt.may gc.fill_color (draw_iter_prim (fun f -> f point) `points) in
+			let clear () = Cnt.may gc.fill_color (fun col ->
+				GlClear.color col ; GlClear.clear [`color]) in
 			match elmt with
 				| Poly poly -> draw_poly poly
 				| Path path -> draw_path path
-				| Dot point -> draw_point point in
+				| Dot point -> draw_point point
+				| Clear -> clear () in
 		List.iter draw_elmt pic
 
 	let bbox _pic = Point.empty_bbox (* TODO *)

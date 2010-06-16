@@ -68,12 +68,12 @@ let identity () = [|
 	[| 0. ; 0. ; 1. ; 0. |] ; [| 0. ; 0. ; 0. ; 1. |]
 |]
 
-let translator { contents = x, y, z } () = [|
+let translator get_pos () = let x, y, z = get_pos () in [|
 	[| 1. ; 0. ; 0. ; 0. |] ; [| 0. ; 1. ; 0. ; 0. |] ;
 	[| 0. ; 0. ; 1. ; 0. |] ; [| x ; y ; z ; 1. |]
 |]
 
-let scaler { contents = x, y, z } () = [|
+let scaler get_pos () = let x, y, z = get_pos () in [|
 	[| x ; 0. ; 0. ; 0. |] ; [| 0. ; y ; 0. ; 0. |] ;
 	[| 0. ; 0. ; z ; 0. |] ; [| 0. ; 0. ; 0. ; 1. |]
 |]

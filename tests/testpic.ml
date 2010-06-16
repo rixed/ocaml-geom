@@ -28,14 +28,14 @@ let small_sq_pos = ref (-1.5, 0.2, 0.)
 let half_unit_square = Algo.scale_single_poly Algo.unit_square Point.zero (K.half K.one)
 let small_sq = View.make_viewable ~parent:root
 	(fun () -> Pic.draw [ Pic.Poly half_unit_square, uni_gc (1., 1., 0.) ])
-	(View.translator small_sq_pos)
+	(View.translator (fun () -> !small_sq_pos))
 
 let smaller_sq = View.make_viewable ~parent:small_sq
 	(fun () -> Pic.draw [ Pic.Poly half_unit_square, uni_gc (1., 0., 1.)])
-	(View.translator (ref (0.5,0.,0.)))
+	(View.translator (fun () -> 0.5, 0., 0.))
 
 let camera_pos = ref (0., 0., 0.5)
-let camera = View.make_viewable ~parent:root (fun () -> ()) (View.translator camera_pos)
+let camera = View.make_viewable ~parent:root (fun () -> ()) (View.translator (fun () -> !camera_pos))
 
 let _ = Format.printf "2\n"
 

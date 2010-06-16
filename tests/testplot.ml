@@ -18,7 +18,7 @@ let plot_view =
 	View.make_viewable ~parent:background (fun () -> Pic.draw (Plot.pic_of_plot ~scale:(2., 1.) [plot])) View.identity
 
 let camera_pos = ref (1., 0.2, 0.5)
-let camera = View.make_viewable ~parent:background (fun () -> ()) (View.translator camera_pos)
+let camera = View.make_viewable ~parent:background (fun () -> ()) (View.translator (fun () -> !camera_pos))
 
 let () = View.display [ (fun () -> View.draw_viewable camera) ]
 

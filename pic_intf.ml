@@ -10,7 +10,7 @@ sig
 	module Poly : Geom.POLYGON
 	module Path : Geom.PATH with module Point = Poly.Point
 
-	type elmt = Poly of Poly.t | Path of Path.t | Dot of Poly.Point.t
+	type elmt = Poly of Poly.t | Path of Path.t | Dot of Poly.Point.t | Clear
 	type t = (elmt * gc) list
 
 	val draw : ?prec:Poly.Point.K.t -> t -> unit
