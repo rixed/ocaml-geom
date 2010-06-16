@@ -45,7 +45,7 @@ struct
 	let of_float f = int_of_float (f *. (float_of_int one))
 	let to_float s = (float_of_int s) /. (float_of_int one)
 	let to_string = string_of_int
-	let of_int = (lsl) Prec.v
+	let of_int i = i lsl Prec.v
 	let half s = s/2
 	let double s = s lsl 1
 	let square s = mul s s
