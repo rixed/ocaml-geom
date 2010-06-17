@@ -73,7 +73,7 @@ let translator get_pos () = let x, y, z = get_pos () in [|
 	[| 0. ; 0. ; 1. ; 0. |] ; [| x ; y ; z ; 1. |]
 |]
 
-let scaler get_pos () = let x, y, z = get_pos () in [|
+let scaler get_scale () = let x, y, z = get_scale () in [|
 	[| x ; 0. ; 0. ; 0. |] ; [| 0. ; y ; 0. ; 0. |] ;
 	[| 0. ; 0. ; z ; 0. |] ; [| 0. ; 0. ; 0. ; 1. |]
 |]

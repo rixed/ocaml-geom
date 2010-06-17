@@ -1,9 +1,9 @@
 open Mlrocket
 
 type t =
-	{ name : string ;
-	  shape : Poly.t ;
-	  position : Point.t ;
+	{ name  : string ;
+	  poly  : Poly.t ;
+	  pos   : Point.t ;
 	  speed : Vec.t }
 
 let make_shape () =
@@ -16,7 +16,7 @@ let make_shape () =
 	Algo.poly_of_path triangle_path K.one
 
 let make () =
-	{ name = "TheRocket!" ;
-	  shape = make_shape () ;
-	  position = Point.zero ;
+	{ name  = "TheRocket!" ;
+	  poly  = make_shape () ;
+	  pos   = Point.zero ;
 	  speed = Vec.zero }

@@ -11,7 +11,7 @@ struct
 	module K = K
 	type t = unit
 	let make () = ()
-	let size _bloc dim = K.one
+	let size _bloc _dim = K.one
 end
 
 module TS = Typeset_impl.Typeset_raw (Poly) (TestBloc)
