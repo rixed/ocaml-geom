@@ -78,6 +78,26 @@ let scaler get_scale () = let x, y, z = get_scale () in [|
 	[| 0. ; 0. ; z ; 0. |] ; [| 0. ; 0. ; 0. ; 1. |]
 |]
 
+let orientor get_orient () = let c, s = get_orient () in [|
+	[| c ; s ; 0. ; 0. |] ; [| -.s ; c ; 0. ; 0. |] ;
+	[| 0. ; 0. ; 0. ; 1. |] ; [| 0. ; 0. ; 0. ; 1. |]
+|]
+
+let trans_orientor get_pos get_orient () =
+	let x, y, z = get_pos () in
+	let c, s = get_orient () in [|
+	[| c ; s ; 0. ; 0. |] ; [| -.s ; c ; 0. ; 0. |] ;
+	[| 0. ; 0. ; 0. ; 1. |] ; [| x ; y ; z ; 1. |]
+|]
+
+let rotator get_angle () =
+	let a = get_angle () in
+	let c, s = cos a, sin a in orientor (fun () -> c, s) ()
+
+let trans_rotator get_pos get_angle () =
+	let a = get_angle () in
+	let c, s = cos a, sin a in trans_orientor get_pos (fun () -> c, s) ()
+
 (* FIXME: protect with a mutex ? *)
 let last_clics = ref []
 

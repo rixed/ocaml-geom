@@ -1,10 +1,9 @@
 open Mlrocket
 
-type t =
-	{ name  : string ;
-	  poly  : Poly.t ;
-	  pos   : Point.t ;
-	  speed : Vec.t }
+type t
 
 val make : unit -> t
-
+val poly_of_rocket : t -> Poly.t
+val pos_of_rocket : t -> unit -> float * float * float
+val orient_of_rocket : t -> unit -> float * float
+val set_orient : t -> float * float -> unit
