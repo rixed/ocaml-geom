@@ -4,7 +4,7 @@ OCAMLC     = ocamlfind ocamlc -thread
 OCAMLOPT   = ocamlfind ocamlopt -thread
 OCAMLDEP   = ocamlfind ocamldep
 INCS       =
-OCAMLOPTFLAGS = $(INCS) -S -w Ae -g
+OCAMLOPTFLAGS = $(INCS) -w Ae -g -S
 OCAMLFLAGS    = $(INCS) -w Ae -g
 
 SOURCES  = cnt.ml cnt_impl.ml \

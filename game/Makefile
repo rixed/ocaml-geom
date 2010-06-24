@@ -1,7 +1,7 @@
 OCAMLC   = OCAMLPATH=../.. ocamlfind ocamlc
 OCAMLOPT = OCAMLPATH=../.. ocamlfind ocamlopt
 OCAMLDEP = OCAMLPATH=../.. ocamlfind ocamldep
-OCAMLOPTFLAGS = -S -w Ael -g
+OCAMLOPTFLAGS = -w Ael -g -S
 OCAMLFLAGS    = -w Ael -g
 
 REQUIRES = geom
