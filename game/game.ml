@@ -1,11 +1,11 @@
 open Mlrocket
 
 let game_clic world (x, y) =
-	if abs_float x > 0.1 || abs_float y > 0.1 then (
-		let n = sqrt (x*.x +. y*.y) in
-		let rocket = List.hd world.World.rockets in
-		Rocket.set_orient rocket (x/.n, y/.n)
-	)
+	if abs_float x > 0.1 || abs_float y > 0.1 then
+	let n = sqrt (x*.x +. y*.y) in
+	let rocket = List.hd world.World.rockets in
+	Rocket.set_orient rocket (x/.n, y/.n) ;
+	Rocket.set_speed rocket (n/.5.)
 
 let game_painter camera () =
 	View.draw_viewable camera
@@ -15,7 +15,7 @@ let uni_gc color =
 	{ Pic_intf.fill_color = Some (faded color) ; Pic_intf.outline_color = Some color }
 
 let pos_of_camera world () =
-	let x, y, z = Rocket.pos_of_rocket (List.hd world.World.rockets) () in
+	let x, y, z = Rocket.pos (List.hd world.World.rockets) () in
 	x, y, z+.1.
 
 let camera_of_world world =
@@ -30,27 +30,30 @@ let camera_of_world world =
 				let star = Pic.Dot point, uni_gc col in
 				if n = 0 then l else add_star (star::l) (n-1) in
 			add_star [] 70 in
-		View.make_viewable (fun () -> Pic.draw (bg :: stars)) View.identity in
+		View.make_viewable "root" (fun () -> Pic.draw (bg :: stars)) View.identity in
 	List.iter (fun rocket ->
 		ignore (View.make_viewable
-			~parent:root
+			~parent:root "a rocket"
 			(fun () ->
-				Pic.draw [ Pic.Poly (Rocket.poly_of_rocket rocket), uni_gc (1., 1., 1.) ])
+				Pic.draw [ Pic.Poly (Rocket.poly rocket), uni_gc (1., 1., 1.) ])
 			(View.trans_orientor
-				(Rocket.pos_of_rocket rocket)
-				(Rocket.orient_of_rocket rocket))))
+				(Rocket.pos rocket)
+				(Rocket.orient rocket))))
 		world.World.rockets ;
+	let rocket_follower = View.make_viewable
+		~parent:root "rocket follower"
+		(fun () -> ())
+		(View.translator (pos_of_camera world)) in
 	(* As we use an ortho projection we can't zoom merely by changing camera altitude. *)
-	let lens = View.make_viewable
-		~parent:root
-		(fun () -> ())
-		(View.scaler (fun () -> 0.1, 0.1, 1.)) in
 	View.make_viewable
-		~parent:lens
+		~parent:rocket_follower "camera"
 		(fun () -> ())
-		(View.translator (pos_of_camera world))
+		(View.scaler (fun () -> 0.1, 0.1, 1.))
 
 let play world =
 	let camera = camera_of_world world in
-	View.display ~onclic:(game_clic world) [ game_painter camera ]
+	View.display
+		~onclic:(game_clic world)
+		~timer:(fun () -> World.run world) ~fps:3
+		[ game_painter camera ]
 

@@ -28,3 +28,5 @@ let make () =
 	  rockets = [ Rocket.make () ] ;
 	  gravity = Random.int fixed_prec }
 
+let run world = List.iter Rocket.run world.rockets
+

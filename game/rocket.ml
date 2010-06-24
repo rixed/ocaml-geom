@@ -5,7 +5,7 @@ type t =
 	  poly  : Poly.t ;
 	  mutable pos    : Point.t ;
 	  mutable orient : float * float ;
-	  mutable speed  : Vec.t }
+	  mutable speed  : float }
 
 let make_shape () =
 	let (++) p1 p2 = Path.extend p1 p2 [] Path.make_straight_line in
@@ -21,9 +21,16 @@ let make () =
 	  poly   = make_shape () ;
 	  pos    = Point.zero ;
 	  orient = 1., 0. ;
-	  speed  = Vec.zero }
+	  speed  = 0. }
 
-let poly_of_rocket rocket = rocket.poly
-let pos_of_rocket rocket () = Point.to_point3 rocket.pos
-let orient_of_rocket rocket () = rocket.orient
+let poly rocket = rocket.poly
+let pos rocket () = Point.to_point3 rocket.pos
+let orient rocket () = rocket.orient
 let set_orient rocket orient = rocket.orient <- orient
+let set_speed rocket speed = rocket.speed <- speed
+
+let run rocket =
+	let dir_x = K.of_float (fst rocket.orient)
+	and dir_y = K.of_float (snd rocket.orient) in
+	let speed = Vec.mul (Vec.of_2scalars (dir_x, dir_y)) (K.of_float rocket.speed) in
+	rocket.pos <- Vec.add rocket.pos speed
