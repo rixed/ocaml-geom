@@ -14,12 +14,13 @@ type painter = unit -> unit
 
 type positioner = unit -> float array array
 type viewable = {
-	painter : painter ; parent : viewable option ;
+	name : string ; painter : painter ; parent : viewable option ;
 	positioner : positioner ; mutable children : viewable list
 }
 
-let make_viewable ?parent painter positioner = 
+let make_viewable ?parent name painter positioner = 
 	let viewable = {
+		name = name ;
 		painter = painter ;
 		parent = parent ;
 		positioner = positioner ;
@@ -107,7 +108,7 @@ let unproject (xs, ys) =
 	float (xs - fst !win_size / 2) *. !screen_to_coord,
 	float (snd !win_size / 2 - ys) *. !screen_to_coord
 
-let display ?onclic painters =
+let display ?onclic ?timer ?(fps=5) painters =
 	ignore (Glut.init ~argv:Sys.argv) ;
 	Glut.initDisplayMode ~alpha:false ~double_buffer:true ~depth:false () ;
 	Glut.initWindowSize ~w:(fst !win_size) ~h:(snd !win_size) ;
@@ -138,5 +139,13 @@ let display ?onclic painters =
     Glut.displayFunc ~cb:(fun () ->
 		List.iter (fun painter -> painter ()) painters ;
 		Glut.swapBuffers()) ;
+	(match timer with Some cb ->
+		let ms = 1000/fps in
+		let rec timerFunc ~value =
+			Glut.timerFunc ~ms:ms ~cb:timerFunc ~value:value ;
+			cb () ;
+			Glut.postRedisplay () in
+		Glut.timerFunc ~ms:ms ~cb:timerFunc ~value:()
+	| _ -> ()) ;
 	Glut.mainLoop ()
 

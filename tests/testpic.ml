@@ -20,22 +20,24 @@ let uni_gc color =
 let root =
 	let ground = Pic.Poly (poly_of_floats [ -2., -1. ; 2., -1. ; 2., 0. ; -2., 0. ]), uni_gc (0.2, 0.6, 0.1) in
 	let sky = Pic.Poly (poly_of_floats [ -2., 0. ; 2., 0. ; 2., 1. ; -2., 1. ]), uni_gc (0.4, 0.4, 1.) in
-	View.make_viewable
+	View.make_viewable "root"
 		(fun () -> Pic.draw [ ground ; sky ])
 		View.identity
 
 let small_sq_pos = ref (-1.5, 0.2, 0.)
 let half_unit_square = Algo.scale_single_poly Algo.unit_square Point.zero (K.half K.one)
-let small_sq = View.make_viewable ~parent:root
+let small_sq = View.make_viewable ~parent:root "small_sq"
 	(fun () -> Pic.draw [ Pic.Poly half_unit_square, uni_gc (1., 1., 0.) ])
 	(View.translator (fun () -> !small_sq_pos))
 
-let smaller_sq = View.make_viewable ~parent:small_sq
+let smaller_sq = View.make_viewable ~parent:small_sq "smaller_sq"
 	(fun () -> Pic.draw [ Pic.Poly half_unit_square, uni_gc (1., 0., 1.)])
 	(View.translator (fun () -> 0.5, 0., 0.))
 
 let camera_pos = ref (0., 0., 0.5)
-let camera = View.make_viewable ~parent:root (fun () -> ()) (View.translator (fun () -> !camera_pos))
+let camera = View.make_viewable ~parent:root "camera"
+	(fun () -> ())
+	(View.translator (fun () -> !camera_pos))
 
 let _ = Format.printf "2\n"
 

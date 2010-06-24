@@ -8,7 +8,7 @@ module Painter = View_simple.Make_painter (Poly)
 module Glyph = Text_impl.Glyph (Poly) (Path)
 module Word = Text_impl.Word (Glyph)
 
-let background = View.make_viewable Painter.draw_background View.identity
+let background = View.make_viewable "bg" Painter.draw_background View.identity
 
 let word_polys =
 	let word = Word.make "T.AVO" in
@@ -16,10 +16,12 @@ let word_polys =
 
 let word_view =
 	let painter = (fun () -> Painter.draw_poly word_polys) in
-	View.make_viewable ~parent:background painter (View.scaler (fun () -> 0.02, 0.02, 0.02))
+	View.make_viewable ~parent:background "word"
+		painter (View.scaler (fun () -> 0.02, 0.02, 0.02))
 
 let camera_pos = ref (1., 0.2, 0.5)
-let camera = View.make_viewable ~parent:background (fun () -> ()) (View.translator (fun () -> !camera_pos))
+let camera = View.make_viewable ~parent:background "camera"
+	(fun () -> ()) (View.translator (fun () -> !camera_pos))
 
 let () = View.display [ (fun () -> View.draw_viewable camera) ]
 
