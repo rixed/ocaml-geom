@@ -29,8 +29,10 @@ let orient rocket () = rocket.orient
 let set_orient rocket orient = rocket.orient <- orient
 let set_speed rocket speed = rocket.speed <- speed
 
-let run rocket =
+let run dt rocket =
 	let dir_x = K.of_float (fst rocket.orient)
 	and dir_y = K.of_float (snd rocket.orient) in
-	let speed = Vec.mul (Vec.of_2scalars (dir_x, dir_y)) (K.of_float rocket.speed) in
-	rocket.pos <- Vec.add rocket.pos speed
+	let s = rocket.speed *. dt in
+	let speed = Vec.mul (Vec.of_2scalars (dir_x, dir_y)) (K.of_float s) in
+	rocket.pos <- Vec.add rocket.pos speed ;
+	rocket.speed <- rocket.speed *. (0.5**dt)   (* loose half of your speed every second *)

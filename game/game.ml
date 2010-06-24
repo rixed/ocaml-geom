@@ -5,7 +5,7 @@ let game_clic world (x, y) =
 	let n = sqrt (x*.x +. y*.y) in
 	let rocket = List.hd world.World.rockets in
 	Rocket.set_orient rocket (x/.n, y/.n) ;
-	Rocket.set_speed rocket (n/.5.)
+	Rocket.set_speed rocket (n *. 5.)
 
 let game_painter camera () =
 	View.draw_viewable camera
@@ -52,8 +52,9 @@ let camera_of_world world =
 
 let play world =
 	let camera = camera_of_world world in
+	let fps = 5 in
 	View.display
 		~onclic:(game_clic world)
-		~timer:(fun () -> World.run world) ~fps:3
+		~timer:(fun () -> World.run (1./.(float_of_int fps)) world) ~fps:fps
 		[ game_painter camera ]
 

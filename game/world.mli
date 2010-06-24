@@ -8,4 +8,5 @@ type t =
 	  gravity : K.t	}
 
 val make : unit -> t
-val run  : t -> unit
+(* Run the world for this fraction of a second *)
+val run  : float -> t -> unit
