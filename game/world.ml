@@ -1,7 +1,7 @@
 open Mlrocket
 
 (* Note : the space is incurved the other way around, so that the ground surrounds us. *)
-let radius = K.of_int 10
+let radius = K.of_int 30
 
 type t =
 	{ ground : Path.t ;
@@ -10,18 +10,19 @@ type t =
 
 let make_ground () =
 	(* Start from a mere "sphere" *)
-	let upper_right  = Point.add (Point.make_unit 0) (Point.make_unit 1) in
-	let bottom_right = Point.sub (Point.make_unit 0) (Point.make_unit 1) in
-	let upper_left   = Point.sub (Point.make_unit 1) (Point.make_unit 0) in
-	let bottom_left  = Point.mul upper_right (K.neg K.one) in
-	let left  = Point.mul (Point.make_unit 0) (K.neg K.one) in
-	let right = Point.make_unit 1 in
-	let upper_circle = Path.extend
-		(Path.empty left) right
-		[ upper_left ; upper_right ] Path.make_bezier_curve in
-	let circle = Path.extend
-		upper_circle left [ bottom_right ; bottom_left ] Path.make_bezier_curve in
-	Path.scale circle Point.zero radius
+	let up    = Point.make_unit 1 in
+	let down  = Point.sub Point.zero up in
+	let right = Point.make_unit 0 in
+	let left  = Point.sub Point.zero right in
+	let upper_right  = Point.add right up in
+	let bottom_right = Point.add right down in
+	let upper_left   = Point.add left  up in
+	let bottom_left  = Point.add left  down in
+	let circ_0 = Path.extend (Path.empty left) up    [ upper_left ]   Path.make_bezier_curve in
+	let circ_1 = Path.extend circ_0            right [ upper_right ]  Path.make_bezier_curve in
+	let circ_2 = Path.extend circ_1            down  [ bottom_right ] Path.make_bezier_curve in
+	let circ_3 = Path.extend circ_2            left  [ bottom_left ]  Path.make_bezier_curve in
+	Path.scale circ_3 Point.zero radius
 
 let make () =
 	{ ground = make_ground () ;

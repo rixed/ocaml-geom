@@ -24,13 +24,24 @@ let camera_of_world world =
 		let stars = 
 			let rec add_star l n =
 				let rand () = (Random.int (K.double World.radius)) - World.radius in
-				let point = Point.of_2scalars (rand (), rand ()) in
+				let point =
+					let rad2 = K.square World.radius in
+					let rec aux () =
+						let p = Point.of_2scalars (rand (), rand ()) in
+						if K.compare (Point.norm2 p) rad2 < 0 then p
+						else aux () in
+					aux () in
 				let rand_col () = (Random.float 0.5) +. 0.5 in
 				let col = rand_col (), rand_col (), rand_col () in
 				let star = Pic.Dot point, uni_gc col in
 				if n = 0 then l else add_star (star::l) (n-1) in
-			add_star [] 70 in
-		View.make_viewable "root" (fun () -> Pic.draw (bg :: stars)) View.identity in
+			let stars_density = 1. in
+			let pi = K.of_float (4. *. atan 1.) in
+			let world_surface = K.to_float (K.mul pi (K.square World.radius)) in
+			add_star [] (int_of_float (stars_density *. world_surface)) in
+		let ground =
+			Pic.Path world.World.ground, uni_gc (1., 1., 1.) in
+		View.make_viewable "root" (fun () -> Pic.draw ~prec:(K.of_float 0.5) (bg :: ground :: stars)) View.identity in
 	List.iter (fun rocket ->
 		ignore (View.make_viewable
 			~parent:root "a rocket"
