@@ -212,6 +212,8 @@ sig
 	val iter : t -> scalar -> (point -> unit) -> unit
 	
 	val bbox : t -> Point.bbox
+
+	val print : Format.formatter -> t -> unit
 end
 
 module type ALGORITHMS =

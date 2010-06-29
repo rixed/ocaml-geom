@@ -31,6 +31,18 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		edges : (point * point list * interpolator) list
 	}
 
+	let print ff path =
+		Format.pp_open_box ff 0 ;
+		Format.pp_print_string ff "<" ; Format.pp_print_space ff () ;
+		let rec aux start edges =
+			Point.print ff start ;
+			(match edges with
+			| [] -> ()
+			| (e, _, _)::edges' -> aux e edges') in
+		aux path.start path.edges ;
+		Format.pp_print_string ff ">" ;
+		Format.pp_close_box ff ()
+
 	(*
 	 * Path manipulation
 	 *)
