@@ -97,6 +97,8 @@ sig
 	val area : t -> t -> scalar
 	val right_turn : t -> t	(** Return the same but turned in anticlockwise direction of PI/2 *)
 	val eq : t -> t -> bool
+	val normalize : t -> t
+	val oposite : t -> t
 	
 	type bbox
 	val empty_bbox : bbox

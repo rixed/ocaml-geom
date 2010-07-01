@@ -5,7 +5,7 @@ let game_clic world (x, y) =
 	let n = sqrt (x*.x +. y*.y) in
 	let rocket = List.hd world.World.rockets in
 	Rocket.set_orient rocket (x/.n, y/.n) ;
-	Rocket.set_speed rocket (n *. 5.)
+	Rocket.set_thrust rocket (n *. 3.)
 
 let game_painter camera () =
 	View.draw_viewable camera
@@ -19,6 +19,7 @@ let pos_of_camera world () =
 	x, y, z+.1.
 
 let camera_of_world world =
+	mlog "Generating world..." ;
 	let root =
 		let bg = Pic.Clear, uni_gc (0.08, 0.08, 0.18) in
 		let stars = 
@@ -35,10 +36,12 @@ let camera_of_world world =
 				let col = rand_col (), rand_col (), rand_col () in
 				let star = Pic.Dot point, uni_gc col in
 				if n = 0 then l else add_star (star::l) (n-1) in
-			let stars_density = 1. in
+			let stars_density = 0.01 in
 			let pi = K.of_float (4. *. atan 1.) in
 			let world_surface = K.to_float (K.mul pi (K.square World.radius)) in
-			add_star [] (int_of_float (stars_density *. world_surface)) in
+			let nb_stars = int_of_float (stars_density *. world_surface) in
+			mlog "\tAdding %d stars for surface = %f..." nb_stars world_surface ;
+			add_star [] nb_stars in
 		let ground =
 			Pic.Path world.World.ground, uni_gc (1., 1., 1.) in
 		View.make_viewable "root" (fun () -> Pic.draw ~prec:(K.of_float 0.5) (bg :: ground :: stars)) View.identity in
@@ -56,14 +59,16 @@ let camera_of_world world =
 		(fun () -> ())
 		(View.translator (pos_of_camera world)) in
 	(* As we use an ortho projection we can't zoom merely by changing camera altitude. *)
+	let zoom = 0.03 in
 	View.make_viewable
 		~parent:rocket_follower "camera"
 		(fun () -> ())
-		(View.scaler (fun () -> 0.1, 0.1, 1.))
+		(View.scaler (fun () -> zoom, zoom, 1.))
 
 let play world =
 	let camera = camera_of_world world in
 	let fps = 5 in
+	mlog "Fps = %d" fps ;
 	View.display
 		~onclic:(game_clic world)
 		~timer:(fun () -> World.run (1./.(float_of_int fps)) world) ~fps:fps
