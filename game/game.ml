@@ -1,11 +1,21 @@
 open Mlrocket
 
-let game_clic world (x, y) =
+let matrix_mult m (x, y, z) =
+	x *. m.(0).(0) +. y *. m.(1).(0) +. z *. m.(2).(0) +. m.(3).(0),
+	x *. m.(0).(1) +. y *. m.(1).(1) +. z *. m.(2).(1) +. m.(3).(1),
+	x *. m.(0).(2) +. y *. m.(1).(2) +. z *. m.(2).(2) +. m.(3).(2)
+
+let game_clic world camera (x, y) =
 	if abs_float x > 0.1 || abs_float y > 0.1 then
-	let n = sqrt (x*.x +. y*.y) in
 	let rocket = List.hd world.World.rockets in
-	Rocket.set_orient rocket (x/.n, y/.n) ;
-	Rocket.set_thrust rocket (n *. 3.)
+	(* get the matrix transforming coords from camera to root *)
+	let m = View.get_transform ~src:camera () in
+	let x', y', _ = matrix_mult m (x, y, 0.) in
+	let rx, ry, _ = Rocket.pos rocket () in
+	let x'', y'' = x' -. rx, y' -. ry in
+	let n = sqrt (x''*.x'' +. y''*.y'') in
+	Rocket.set_orient rocket (x''/.n, y''/.n) ;
+	Rocket.set_thrust rocket (n *. 0.03)
 
 let game_painter camera () =
 	View.draw_viewable camera
@@ -15,8 +25,16 @@ let uni_gc color =
 	{ Pic_intf.fill_color = Some (faded color) ; Pic_intf.outline_color = Some color }
 
 let pos_of_camera world () =
-	let x, y, z = Rocket.pos (List.hd world.World.rockets) () in
+	let rocket = List.hd world.World.rockets in
+	let x, y, z = Rocket.pos rocket () in
 	x, y, z+.1.
+
+let orient_of_camera world () =
+	let rocket = List.hd world.World.rockets in
+	let x, y, _ = Rocket.pos rocket () in
+	let n = sqrt (x*.x +. y*.y) in
+	(* we are not supposed to reach that far, but that's the starting position for now :-) *)
+	if n > 0.1 then -. y /. n, x /. n else 1., 0.
 
 let camera_of_world world =
 	mlog "Generating world..." ;
@@ -45,32 +63,30 @@ let camera_of_world world =
 		let ground =
 			Pic.Path world.World.ground, uni_gc (1., 1., 1.) in
 		View.make_viewable "root" (fun () -> Pic.draw ~prec:(K.of_float 0.5) (bg :: ground :: stars)) View.identity in
-	List.iter (fun rocket ->
-		ignore (View.make_viewable
-			~parent:root "a rocket"
-			(fun () ->
-				Pic.draw [ Pic.Poly (Rocket.poly rocket), uni_gc (1., 1., 1.) ])
-			(View.trans_orientor
-				(Rocket.pos rocket)
-				(Rocket.orient rocket))))
+	List.iter
+		(fun rocket ->
+			ignore (View.make_viewable
+				~parent:root "a rocket"
+				(fun () -> Pic.draw [ Pic.Poly (Rocket.poly rocket), uni_gc (1., 1., 1.) ])
+				(View.trans_orientor (Rocket.pos rocket) (Rocket.orient rocket))))
 		world.World.rockets ;
 	let rocket_follower = View.make_viewable
 		~parent:root "rocket follower"
 		(fun () -> ())
-		(View.translator (pos_of_camera world)) in
+		(View.trans_orientor (pos_of_camera world) (orient_of_camera world)) in
 	(* As we use an ortho projection we can't zoom merely by changing camera altitude. *)
-	let zoom = 0.03 in
 	View.make_viewable
 		~parent:rocket_follower "camera"
 		(fun () -> ())
-		(View.scaler (fun () -> zoom, zoom, 1.))
+		(View.scaler
+			(fun () -> let zoom = 15. in zoom, zoom, 1.))
 
 let play world =
 	let camera = camera_of_world world in
 	let fps = 5 in
 	mlog "Fps = %d" fps ;
 	View.display
-		~onclic:(game_clic world)
+		~onclic:(game_clic world camera)
 		~timer:(fun () -> World.run (1./.(float_of_int fps)) world) ~fps:fps
 		[ game_painter camera ]
 
