@@ -2,7 +2,7 @@ open Mlrocket
 
 type t
 
-val make       : unit -> t
+val make       : Point.t -> t
 val poly       : t -> Poly.t
 val pos        : t -> unit -> float * float * float
 val orient     : t -> unit -> float * float

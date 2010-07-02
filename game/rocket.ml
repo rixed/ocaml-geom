@@ -17,11 +17,11 @@ let make_shape () =
 		(Point.of_2scalars (K.neg K.one, K.neg width)) in
 	Algo.poly_of_path triangle_path K.one
 
-let make () =
+let make init_pos =
 	mlog "\tBuilding rocket..." ;
 	{ name   = "TheRocket!" ;
 	  poly   = make_shape () ;
-	  pos    = Point.zero ;
+	  pos    = init_pos ;
 	  orient = 1., 0. ;
 	  thrust = 0. ;
 	  speed  = Vec.zero }

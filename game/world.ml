@@ -1,7 +1,7 @@
 open Mlrocket
 
 (* Note : the space is incurved the other way around, so that the ground surrounds us. *)
-let radius = K.of_int 100
+let radius = K.of_int 150
 
 type t =
 	{ ground : Path.t ;
@@ -57,7 +57,7 @@ let make () =
 	let gravity = K.of_float 0.1 in
 	mlog "\tGravity = %a" K.print gravity ;
 	{ ground = make_ground () ;
-	  rockets = [ Rocket.make () ] ;
+	  rockets = [ Rocket.make (Point.mul (Point.make_unit 0) (K.half radius)) ] ;
 	  gravity = gravity }
 
 let run dt world = List.iter (Rocket.run world.gravity dt) world.rockets
