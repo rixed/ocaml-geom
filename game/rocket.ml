@@ -27,7 +27,7 @@ let make init_pos =
 	  speed  = Vec.zero }
 
 let poly rocket = rocket.poly
-let pos rocket () = Point.to_point3 rocket.pos
+let pos rocket = rocket.pos
 let orient rocket () = rocket.orient
 let set_orient rocket orient = rocket.orient <- orient
 let set_thrust rocket thrust = rocket.thrust <- thrust

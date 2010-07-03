@@ -177,7 +177,7 @@ let unproject (xs, ys) =
 	float (xs - fst !win_size / 2) *. !screen_to_coord,
 	float (snd !win_size / 2 - ys) *. !screen_to_coord
 
-let display ?onclic ?timer ?(fps=5) painters =
+let display ?onclic ?timer ?(fps=25) painters =
 	ignore (Glut.init ~argv:Sys.argv) ;
 	Glut.initDisplayMode ~alpha:false ~double_buffer:true ~depth:false () ;
 	Glut.initWindowSize ~w:(fst !win_size) ~h:(snd !win_size) ;

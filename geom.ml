@@ -93,6 +93,7 @@ sig
 	val half : t -> t
 	val scalar_product : t -> t -> scalar
 	val norm2 : t -> scalar
+	val norm : t -> scalar
 	val to_point3 : t -> Gl.point3
 	val area : t -> t -> scalar
 	val right_turn : t -> t	(** Return the same but turned in anticlockwise direction of PI/2 *)

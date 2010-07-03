@@ -81,9 +81,10 @@ struct
 	let mul (x, y) s = K.mul s x, K.mul s y
 	let scalar_product (x1, y1) (x2, y2) = K.add (K.mul x1 x2) (K.mul y1 y2)
 	let norm2 v = scalar_product v v
+	let norm v = K.sqrt (norm2 v)
 	let normalize v =
-		let n = norm2 v in
-		try mul v (K.inv (K.sqrt n)) with _ -> v
+		let n = norm v in
+		try mul v (K.inv n) with _ -> v
 	let oposite (x, y) = (K.neg x, K.neg y)
 	let to_point3 (x, y) = (K.to_float x, K.to_float y, 0.)
 	let area (x1, y1) (x2, y2) = K.sub (K.mul x1 y2) (K.mul x2 y1)
