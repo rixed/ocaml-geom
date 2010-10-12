@@ -51,10 +51,10 @@ struct
 				let glue, bloc = List.hd chunks in
 				let rem_s', offset = match glue with
 					| Space (min, max) ->
-						rem_s - 1, Vec.add last_pos (Vec.mul (Vec.make_unit dim) (K.sub (K.half (K.add min max)) spc_dist))
+						rem_s - 1, Vec.add last_pos (Vec.mul (K.sub (K.half (K.add min max)) spc_dist) (Vec.make_unit dim))
 					| _ ->
 						rem_s, last_pos in
-				let disp = Vec.mul (Vec.make_unit dim) (Bloc.size bloc dim) in
+				let disp = Vec.mul (Bloc.size bloc dim) (Vec.make_unit dim) in
 				let last_pos' = Vec.add offset disp in
 				add_offset (offset::offsets) last_pos' (rem_b-1) rem_s' (List.tl chunks)
 			) in

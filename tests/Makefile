@@ -1,20 +1,13 @@
-OCAMLC   = OCAMLPATH=../.. ocamlfind ocamlc
-OCAMLOPT = OCAMLPATH=../.. ocamlfind ocamlopt
-OCAMLDEP = OCAMLPATH=../.. ocamlfind ocamldep
-OCAMLOPTFLAGS = -w Ael -g -S
-OCAMLFLAGS    = -w Ael -g
+OCAMLPATH = ../..
 
-REQUIRES = geom
-
-.PHONY: all clean
-
-PROGRAMS = test.byte testpic.byte testplot.byte test_word.byte test_typeset.byte
+PROGRAMS = test.byte test_word.byte test_typeset.byte
 
 all: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)
 
-# Common rules
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .opt .byte
+REQUIRES = geom
+
+include ../make.common
 
 .cmo.byte:
 	$(OCAMLC)   -o $@ -package "$(REQUIRES)" -linkpkg $(OCAMLFLAGS) $^
@@ -22,21 +15,7 @@ opt: $(PROGRAMS:.byte=.opt)
 .cmx.opt:
 	$(OCAMLOPT) -o $@ -package "$(REQUIRES)" -linkpkg $(OCAMLOPTFLAGS) $^
 
-.ml.cmo:
-	$(OCAMLC) -package "$(REQUIRES)" $(OCAMLFLAGS) -c $<
-
-.mli.cmi:
-	$(OCAMLC) -package "$(REQUIRES)" $(OCAMLFLAGS) -c $<
-
-.ml.cmx:
-	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) -c $<
-
-# Clean up
-clean:
-	rm -f *.cm[ioxa] *.cmxa *.a *.s *.o *.byte *.opt .depend
-
-# Dependencies
-.depend: *.ml
-	$(OCAMLDEP) -package "$(REQUIRES)" -I .. $^ > $@
+clean-spec:
+	@rm -f $(PROGRAMS) $(PROGRAMS:.byte=.opt)
 
 include .depend

@@ -1,9 +1,10 @@
-module Make (Point_: Geom.POINT)
-	: Geom.PATH with module Point = Point_ =
+open Algen_intf
+
+module Make (Point : Geom.POINT)
+	: Geom.PATH with module Point = Point =
 struct
-	module Point = Point_
+	module Point = Point
 	type point = Point.t
-	type scalar = Point.K.t
 (*
 let vector_add (ax, ay) (bx, by) = (ax+.bx, ay+.by)
 let vector_mul s (ax, ay) = (ax*.s, ay*.s)
@@ -24,7 +25,7 @@ let point_disp v p = vector_add p v
 let point_dist a b = vector_sub b a
 let point_scale center scale p = vector_add center (vector_mul scale (vector_sub p center))
 *)
-	type interpolator = point -> point -> point list -> Point.scalar -> point list
+	type interpolator = point -> point -> point list -> Point.K.t -> point list
 
 	type t = {
 		start : point ;
@@ -50,7 +51,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	let empty start = { start = start ; edges = [] }
 
 	let extend path next ctrls interp = (match path.edges with
-		| (pt, _, _) :: _ -> if Point.eq pt next then
+		| (pt, _, _) :: _ -> if 0 = Point.compare pt next then
 			Format.printf "Path edge of no length at point %a@\n" Point.print pt
 		| _ -> ()) ;
 		{ path with edges = path.edges @ [next, ctrls, interp] }
@@ -67,11 +68,11 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	let center path =
 		(* FIXME: we should add the center of each edge instead of adding the starting point and every edge's last *)
 		let add_pos p (n, _, _) = Point.add p n in
-		Point.mul (List.fold_left add_pos path.start path.edges) (Point.K.inv (Point.K.of_int (size path)))
+		Point.mul (Point.K.inv (Point.K.of_int (size path))) (List.fold_left add_pos path.start path.edges)
 
 	(* FIXME: move this under ALGO, and use scale_point. Wait, then algo would know internal structure ? *)
 	let scale path center scale =
-		let scale_me p = Point.add center (Point.mul (Point.sub p center) scale) in
+		let scale_me p = Point.add center (Point.mul scale (Point.sub p center)) in
 		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
 		{ start = scale_me path.start ; edges = List.map edge_scale path.edges }
 
@@ -79,10 +80,10 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		let scale_me p =
 			(* decompose vector from center to p as one vector along axis and one perpendicular component. *)
 			let t = Point.sub p center in
-			let t_axis = Point.mul axis (Point.scalar_product axis t) in
+			let t_axis = Point.mul (Point.scalar_product axis t) axis in
 			let t_perp = Point.sub t t_axis in
 			(* now rescale axis component *)
-			let new_t_axis = Point.mul t_axis ratio in
+			let new_t_axis = Point.mul ratio t_axis in
 			(* and rebuild new p from these *)
 			Point.add center (Point.add new_t_axis t_perp) in
 		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
@@ -96,8 +97,9 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	let make_straight_line _start _stop _control _res = []
 
 	let rec bezier ctrls res =
+		let half_vector = Array.map Point.K.half in
 		let len = Array.length ctrls in
-		let mid_point = Point.half (Point.add ctrls.(0) ctrls.(len-1)) in
+		let mid_point = half_vector (Point.add ctrls.(0) ctrls.(len-1)) in
 		let ctrls_l = Array.make len Point.zero in
 		let ctrls_r = Array.make len Point.zero in
 		let bino_coef = Array.init len (fun i -> if i = 0 then Point.K.one else Point.K.zero) in
@@ -107,11 +109,11 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 			(* compute line l (resp. len+1-l) of ctrls_l (resp. ctrls_r) *)
 			for c = 0 to (len-1) do
 				let cc = len-1-c in
-				ctrls_l.(l)  <- Point.add ctrls_l.(l)  (Point.mul ctrls.(c) bino_coef.(c)) ;
-				ctrls_r.(ll) <- Point.add ctrls_r.(ll) (Point.mul ctrls.(c) bino_coef.(cc))
+				ctrls_l.(l)  <- Point.add ctrls_l.(l)  (Point.mul bino_coef.(c)  ctrls.(c)) ;
+				ctrls_r.(ll) <- Point.add ctrls_r.(ll) (Point.mul bino_coef.(cc) ctrls.(c))
 			done ;
-			ctrls_l.(l)  <- Point.mul ctrls_l.(l)  (Point.K.inv !divisor) ;
-			ctrls_r.(ll) <- Point.mul ctrls_r.(ll) (Point.K.inv !divisor) ;
+			ctrls_l.(l)  <- Point.mul (Point.K.inv !divisor) ctrls_l.(l)  ;
+			ctrls_r.(ll) <- Point.mul (Point.K.inv !divisor) ctrls_r.(ll) ;
 			(* update binomial coefs *)
 			for c = (len - 1) downto 1 do
 				bino_coef.(c) <- Point.K.add bino_coef.(c) bino_coef.(c-1)
@@ -143,9 +145,9 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		aux path.start path.edges
 
 	let bbox path =
-		let union_ctls bbox ctl = Point.bbox_add_vec bbox ctl in
+		let union_ctls bbox ctl = Point.Bbox.add bbox ctl in
 		let union_edges bbox (dest, ctls, _) =
-			List.fold_left union_ctls (Point.bbox_add_vec bbox dest) ctls in
-		List.fold_left union_edges (Point.make_bbox path.start) path.edges
+			List.fold_left union_ctls (Point.Bbox.add bbox dest) ctls in
+		List.fold_left union_edges (Point.Bbox.make path.start) path.edges
 
 end

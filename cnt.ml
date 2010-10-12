@@ -115,3 +115,19 @@ let may o f = match o with
 	| Some x -> f x
 	| None -> ()
 
+let forever f x = while true do f x done
+
+let try_finalize f x finally y =
+  let res =
+    try f x with exn ->
+      finally y;
+      raise exn in
+    finally y;
+    res
+
+let with_mutex m f x =
+  Mutex.lock m ;
+  try_finalize f x Mutex.unlock m
+
+let apply x f = f x
+

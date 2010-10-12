@@ -1,14 +1,13 @@
 open Typeset_intf
+module G = View.Glop
 
-module K = Geom.CheckedField (Geom_algebr.FloatField)
-module Vec = Geom_algebr.Vector2D (K)
-module Point = Geom_shapes.Point (Vec)
+module Point = Geom_shapes.Point (G.V)
 module Ring = Cnt_impl.GenRing (struct type t = Point.t end)
 module Poly = Geom_shapes.Polygon (Point) (Ring)
 
 module TestBloc =
 struct
-	module K = K
+	module K = G.K
 	type t = unit
 	let make () = ()
 	let size _bloc _dim = K.one
@@ -21,17 +20,17 @@ module TS = Typeset_impl.Typeset_raw (Poly) (TestBloc)
 let check_line () =
 	let bloc = TestBloc.make () in
 	(* Check an empty bloc list gives an empty offset list *)
-	assert (TS.typeset_line 0 K.one [] = []) ;
+	assert (TS.typeset_line 0 G.K.one [] = []) ;
 	(* Check that a single bloc gives a single offset of zero *)
-	assert (TS.typeset_line ~justification:Justified 0 K.one [ TS.Stuck, bloc ] = [ Vec.zero ]) ;
-	assert (TS.typeset_line ~justification:Justified 0 K.one [ TS.Space (K.zero, K.one), bloc ] = [ Vec.zero ]) ;
+	assert (TS.typeset_line ~justification:Justified 0 G.K.one [ TS.Stuck, bloc ] = [ G.V.zero ]) ;
+	assert (TS.typeset_line ~justification:Justified 0 G.K.one [ TS.Space (G.K.zero, G.K.one), bloc ] = [ G.V.zero ]) ;
 	(* Check that two blocs that fit the line gives two offsets and are justified *)
-	let offsets = TS.typeset_line ~justification:Justified 0 (K.of_int 3) [
-		TS.Stuck, bloc ; TS.Space (K.zero, K.one), bloc
+	let offsets = TS.typeset_line ~justification:Justified 0 (G.K.of_int 3) [
+		TS.Stuck, bloc ; TS.Space (G.K.zero, G.K.one), bloc
 	] in
-	List.iter (fun offset -> Format.printf "offset = %a@?" Vec.print offset) offsets ;
+	List.iter (fun offset -> Format.printf "offset = %a@?" G.V.print offset) offsets ;
 	Format.print_newline () ;
-	assert (offsets = [ Vec.zero ; Vec.mul (Vec.make_unit 0) 2. ])
+	assert (offsets = [ G.V.zero ; G.V.double (G.V.make_unit 0) ])
 
 let () =
 	check_line ()

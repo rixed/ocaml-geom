@@ -41,7 +41,7 @@ struct
 		let to_point (x, y) =
 			let xs = Poly.Point.K.of_float x in
 			let ys = Poly.Point.K.of_float y in
-			Point.of_3scalars (xs, ys, Poly.Point.K.zero) in
+			[| xs ; ys ; Poly.Point.K.zero |] in
 		let rec path_of_contour next last path =
 			if next > last then path else (
 				match outline.tags.(next) with
@@ -92,18 +92,18 @@ struct
 		let rec extend_bbox current = function
 			| [] -> current
 			| path :: other ->
-				extend_bbox (Point.bbox_union current (Path.bbox path)) other in
-		extend_bbox Point.empty_bbox glyph.paths
+				extend_bbox (Point.Bbox.union current (Path.bbox path)) other in
+		extend_bbox Point.Bbox.empty glyph.paths
 	
 	let advance ?(orientation=Horizontal) prev_glyph next_glyph =
 		match orientation with
 		| Horizontal ->
 			let kern_vec = get_kerning face prev_glyph.index next_glyph.index Kerning_unscaled in
-			Point.of_2scalars
-				(Point.K.of_float (prev_glyph.advance_x +. kern_vec.ft_x),
-				 Point.K.of_float kern_vec.ft_y)
+			[| Point.K.of_float (prev_glyph.advance_x +. kern_vec.ft_x) ;
+			   Point.K.of_float kern_vec.ft_y |]
 		| Vertical ->
-			Point.of_2scalars (Point.K.zero, Point.K.of_float prev_glyph.advance_y)
+			[| Point.K.zero ;
+			   Point.K.of_float prev_glyph.advance_y |]
 end
 
 module Word
@@ -142,10 +142,14 @@ struct
 		let rec aux bbox = function
 			| [] -> bbox
 			| (glyph, pos) :: others ->
-				let g_bbox = Point.bbox_translate (Glyph.bbox glyph) pos in
-				let new_bbox = Point.bbox_union bbox g_bbox in
+				let translate_bbox pos = function
+					| Point.Bbox.Empty -> Point.Bbox.Empty
+					| Point.Bbox.Box (x, y) ->
+						Point.Bbox.Box (Point.add x pos, Point.add y pos) in
+				let g_bbox = translate_bbox pos (Glyph.bbox glyph) in
+				let new_bbox = Point.Bbox.union bbox g_bbox in
 				aux new_bbox others in
-		aux Glyph.Poly.Point.empty_bbox word
+		aux Glyph.Poly.Point.Bbox.empty word
 
 	let to_poly word prec =
 		let rec add_glyph polys = function

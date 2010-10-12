@@ -2,13 +2,15 @@
 	Given a Polygon, typeset a set of boxes into it.
 *)
 
+open Algen_intf
+
 type orientation = Horizontal | Vertical
 type direction = Left_to_right | Right_to_left
 type justification = Start | Stop | Center | Justified
 
 module type BLOC =
 sig
-	module K : Geom.FIELD
+	module K : FIELD
 	type t
 	(* Returns the size of a bloc in the given dimension *)
 	val size : t -> int (* dimension *) -> K.t

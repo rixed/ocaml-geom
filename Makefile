@@ -1,37 +1,27 @@
+OCAMLPATH = ..
+
+all: geom.cma
+opt: geom.cmxa
+
 NAME = geom
 
-OCAMLC     = ocamlfind ocamlc -thread
-OCAMLOPT   = ocamlfind ocamlopt -thread
-OCAMLDEP   = ocamlfind ocamldep
-INCS       =
-OCAMLOPTFLAGS = $(INCS) -w Ae -g -S
-OCAMLFLAGS    = $(INCS) -w Ae -g
-
-SOURCES  = cnt.ml cnt_impl.ml \
-	geom.ml geom_algebr.ml geom_shapes.ml geom_path.ml geom_algo.ml \
+ML_SOURCES  = cnt.ml cnt_impl.ml \
+	geom.ml geom_shapes.ml geom_path.ml geom_algo.ml \
 	text_intf.ml text_impl.ml \
-	view.ml view_simple.ml turtle.ml \
-	pic_intf.ml pic_impl.ml \
-	plot_intf.ml plot_impl.ml \
+	view.ml \
 	typeset_intf.ml typeset_impl.ml
 
-OBJECTS  = $(SOURCES:.ml=.cmo)
-XOBJECTS = $(OBJECTS:.cmo=.cmx)
+REQUIRES = glop camlimages.freetype
 
-ARCHIVE  = $(NAME).cma
+include make.common
+
+ARCHIVE = $(NAME).cma
 XARCHIVE = $(NAME).cmxa
 
-REQUIRES = lablGL.glut camlimages.freetype
-
-.PHONY: all clean install uninstall reinstall
-
-all: $(ARCHIVE)
-opt: $(XARCHIVE)
-
-$(ARCHIVE): $(OBJECTS)
+$(ARCHIVE): $(ML_OBJS)
 	$(OCAMLC)   -a -o $@ -package "$(REQUIRES)" -linkpkg $(OCAMLFLAGS) $^
 
-$(XARCHIVE): $(XOBJECTS)
+$(XARCHIVE): $(ML_XOBJS)
 	$(OCAMLOPT) -a -o $@ -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $^
 
 install: all
@@ -43,27 +33,14 @@ uninstall:
 
 reinstall: uninstall install
 
-check: geom.cma geom.cmxa
-	make -C tests all opt && tests/test_word.byte
+check: $(ARCHIVE) $(XARCHIVE)
+	@make -C tests all opt
+	@for t in tests/*.byte tests/*.opt ; do $$t ; done
+	@echo Ok
 
-# Common rules
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+clean-spec:
+	@make -C tests clean
 
-.ml.cmo:
-	$(OCAMLC) -package "$(REQUIRES)" $(OCAMLFLAGS) -c $<
-
-.mli.cmi:
-	$(OCAMLC) -package "$(REQUIRES)" $(OCAMLFLAGS) -c $<
-
-.ml.cmx:
-	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) -c $<
-
-# Clean up
-clean:
-	rm -f *.cm[ioxa] *.cmxa *.a *.o *.s .depend
-
-# Dependencies
-.depend: $(SOURCES)
-	$(OCAMLDEP) -package "$(REQUIRES)" $^ > $@
+distclean: clean
 
 include .depend

@@ -1,125 +1,4 @@
-module type FIELD =
-sig
-	type t
-
-	val zero : t
-	val one : t
-	val compare : t -> t -> int
-	val min : t -> t -> t
-	val max : t -> t -> t
-	val of_float : float -> t
-	val to_float : t -> float
-	val of_int : int -> t
-	val to_string : t -> string
-
-	val add : t -> t -> t
-	val sub : t -> t -> t
-	val mul : t -> t -> t
-	val div : t -> t -> t
-	val neg : t -> t
-	val inv : t -> t
-	val half : t -> t
-	val double : t -> t
-	val square : t -> t
-	val sqrt : t -> t
-	val abs : t -> t
-
-	val print : Format.formatter -> t -> unit
-end
-
-module CheckedField (K : FIELD)
-	: FIELD with type t = K.t =
-struct
-	include K
-
-	let add a b =
-		let c = add a b in
-		let c_= add b a in
-		assert (c = c_) ;
-		if a = zero then assert (c = b) else if b = zero then assert (c = a) ;
-		c
-	
-	let sub a b =
-		let c = sub a b in
-		let c_= sub b a in
-		assert (add c c_ = zero) ;
-		if a = b then assert (c = zero) ;
-		if b = zero then assert (c = a) ;
-		c
-	
-	let mul a b =
-		let c = mul a b in
-		let c_= mul b a in
-		assert (c = c_) ;
-		if a = zero || b = zero then assert (c = zero) ;
-		if a = one then assert (c = b) ;
-		if b = one then assert (c = a) ;
-		c
-	
-	let div a b =
-		let c = div a b in
-		if b = one then assert (c = a) ;
-		if a = zero then assert (c = zero) ;
-		c
-
-	let _ =
-		assert (add one zero = one) ;
-		assert (sub one zero = one) ;
-		assert (sub one one = zero) ;
-		assert (mul one one = one) ;
-		assert (mul one zero = zero) ;
-		assert (div one one = one) ;
-		assert (div zero one = zero) ;
-		assert (square zero = zero) ;
-		assert (square one = one) ;
-		assert (half zero = zero)
-end
-
-module type VECTOR =
-sig
-	module K : FIELD
-	type t
-	type scalar = K.t
-
-	val zero : t
-	val make_unit : int -> t
-	val nth : t -> int -> scalar
-	val of_3scalars : scalar * scalar * scalar -> t
-	val of_2scalars : scalar * scalar -> t
-	val to_3scalars : t -> scalar * scalar * scalar
-	val add : t -> t -> t
-	val sub : t -> t -> t
-	val mul : t -> scalar -> t
-	val half : t -> t
-	val scalar_product : t -> t -> scalar
-	val norm2 : t -> scalar
-	val norm : t -> scalar
-	val to_point3 : t -> Gl.point3
-	val area : t -> t -> scalar
-	val right_turn : t -> t	(** Return the same but turned in anticlockwise direction of PI/2 *)
-	val eq : t -> t -> bool
-	val normalize : t -> t
-	val oposite : t -> t
-	
-	type bbox
-	val empty_bbox : bbox
-	val make_bbox : t -> bbox
-	val bbox_union : bbox -> bbox -> bbox
-	val bbox_add_vec : bbox -> t -> bbox
-	val bbox_translate : bbox -> t -> bbox
-	
-	val print : Format.formatter -> t -> unit
-end
-
-module Test_Vector (V : VECTOR) =
-struct
-	let _ =
-		assert (V.zero = V.of_3scalars (V.K.zero, V.K.zero, V.K.zero)) ;
-		assert (V.add V.zero V.zero = V.zero) ;
-		assert (V.sub V.zero V.zero = V.zero) ;
-		assert (V.mul V.zero V.K.one = V.zero) ;
-		assert (V.norm2 V.zero = V.K.zero)
-end
+open Algen_intf
 
 module type POINT =
 sig
@@ -138,6 +17,8 @@ sig
 	val intersect : ?closed:bool -> t -> t -> t -> t -> bool
 
 	val copy : t -> t
+	
+	val area : t -> t -> K.t
 end
 
 module type POINT_SET =
@@ -176,13 +57,12 @@ sig
 	module Point : POINT
 
 	type point = Point.t
-	type scalar = Point.scalar
 	
 	(** Function that, given a starting point, a stopping point, a control points list
 	    and a resolution, will return a list of intermediary points going from the
 	    starting point to the destination at the given resolution. *)
 	
-	type interpolator = point -> point -> point list -> scalar -> point list
+	type interpolator = point -> point -> point list -> Point.K.t -> point list
 	val make_straight_line : interpolator
 	val make_bezier_curve : interpolator
 
@@ -207,14 +87,14 @@ sig
 	val center : t -> point
 
 	(** Scale a path relatively to a point. *)
-	val scale : t -> point -> scalar -> t
+	val scale : t -> point -> Point.K.t -> t
 
 	(** Scale a path along a given axis. *)
-	val scale_along : point (*center*) -> point (*axis*) -> scalar -> t -> t
+	val scale_along : point (*center*) -> point (*axis*) -> Point.K.t -> t -> t
 	
-	val iter : t -> scalar -> (point -> unit) -> unit
+	val iter : t -> Point.K.t -> (point -> unit) -> unit
 	
-	val bbox : t -> Point.bbox
+	val bbox : t -> Point.Bbox.t
 
 	val print : Format.formatter -> t -> unit
 end
@@ -224,7 +104,7 @@ sig
 	module Poly : POLYGON
 	module Path : PATH with module Point = Poly.Point
 
-	val area : Poly.t list -> Poly.Point.scalar
+	val area : Poly.t list -> Poly.Point.K.t
 	val is_convex_at : Poly.Point.t -> Poly.Point.t -> Poly.Point.t -> bool
 	val is_convex : Poly.t -> bool
 	val in_cone : Poly.t -> Poly.Point.t -> bool
@@ -241,11 +121,11 @@ sig
 	val simplify : Poly.t list -> Poly.t
 	val translate_poly : Poly.t list -> Poly.Point.t -> Poly.t list
 	val translate_single_poly : Poly.t -> Poly.Point.t -> Poly.t
-	val scale_poly : Poly.t list -> Poly.Point.t -> Poly.Point.scalar -> Poly.t list
-	val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.scalar -> Poly.t
+	val scale_poly : Poly.t list -> Poly.Point.t -> Poly.Point.K.t -> Poly.t list
+	val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.t
 	(** Close the path and convert it to a Polygon. *)
-	val poly_of_path : Path.t -> Path.Point.scalar -> Poly.t
-	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.scalar -> Poly.Point.t
+	val poly_of_path : Path.t -> Path.Point.K.t -> Poly.t
+	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.Point.t
 
 	(* Some utilities *)
 	val path_of_points : Poly.Point.t list -> Path.t

@@ -34,20 +34,20 @@ struct
 end
 
 module Algorithms
-	(P_: Geom.POLYGON)
-	(Path_: Geom.PATH with module Point = P_.Point)
+	(Poly : Geom.POLYGON)
+	(Path : Geom.PATH with module Point = Poly.Point)
 	: Geom.ALGORITHMS with
-		module Poly = P_ and module Path = Path_ =
+		module Poly = Poly and module Path = Path =
 struct
-	module Poly = P_
-	module Path = Path_
+	module Poly = Poly
+	module Path = Path
 	module Point = Poly.Point
 	module K = Point.K
 
 	let debug = true
 
 	let scale_point point center ratio =
-		Point.add center (Point.mul (Point.sub point center) ratio)
+		Point.add center (Point.mul ratio (Point.sub point center))
 
 	let next_pt p = Poly.get (Poly.next p)
 	let prev_pt p = Poly.get (Poly.prev p)
@@ -630,7 +630,10 @@ struct
 		List.fold_left Poly.insert_after Poly.empty points
 
 	let unit_square = poly_of_points
-		(List.map Point.of_2scalars [ K.zero, K.zero ; K.one, K.zero ; K.one, K.one ; K.zero, K.one ])
+		[ [| K.zero ; K.zero |] ;
+		  [| K.one  ; K.zero |] ;
+		  [| K.one  ; K.one  |] ;
+		  [| K.zero ; K.one  |] ]
 
 end (* module Algorithms *)
 

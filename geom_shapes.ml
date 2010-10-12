@@ -1,7 +1,11 @@
-module Point (Vector : Geom.VECTOR)
-	: Geom.POINT with type t = Vector.t and module K = Vector.K and type scalar = Vector.scalar =
+open Algen_intf
+
+module Point (Vector : VECTOR)
+	: Geom.POINT with module K = Vector.K =
 struct
 	include Vector
+
+	let area a b = K.sub (K.mul a.(0) b.(1)) (K.mul a.(1) b.(0))
 
 	let compare_left p0 p1 p =
 		let v0 = sub p1 p0 in
@@ -20,15 +24,12 @@ struct
 		if cmp2 = 0 then closed else
 		true
 	
-	let compare_x p0 p1 =
-		let (x0, _, _) = to_3scalars p0 in
-		let (x1, _, _) = to_3scalars p1 in
-		K.compare x0 x1
+	let compare_coord c p0 p1 =
+		K.compare p0.(c) p1.(c)
+
+	let compare_x = compare_coord 0
 	
-	let compare_y p0 p1 =
-		let (_, y0, _) = to_3scalars p0 in
-		let (_, y1, _) = to_3scalars p1 in
-		K.compare y0 y1
+	let compare_y = compare_coord 1
 
 	let intersect ?(closed=true) p0 p1 q0 q1 =
 		let (^^) a b = (* Exclusive logical or *)

@@ -1,6 +1,0 @@
-open Turtle;;
-#install_printer Poly.print;;
-#install_printer P.print;;
-#install_printer V.print;;
-#install_printer K.print;;
-start ();;
