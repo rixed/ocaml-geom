@@ -7,12 +7,12 @@ NAME = geom
 
 ML_SOURCES  = cnt.ml cnt_impl.ml \
 	geom.ml geom_shapes.ml geom_path.ml geom_algo.ml \
-	text_intf.ml text_impl.ml \
-	view.ml \
-	typeset_intf.ml typeset_impl.ml
+	text_intf.ml text_impl.ml
 
-REQUIRES = glop camlimages.freetype
+REQUIRES = bricabrac pfds algen camlimages.freetype
 
+OCAMLOPTFLAGS = -rectypes
+OCAMLFLAGS = -rectypes
 include make.common
 
 ARCHIVE = $(NAME).cma

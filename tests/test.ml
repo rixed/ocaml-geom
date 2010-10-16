@@ -1,15 +1,13 @@
 (* Test the shipped implementations. *)
 open Algen_intf
-module G = View.Glop
+module G = Glop_impl.Glop2D
+module View = Glop_view.Make(G)
 
 module P = Geom_shapes.Point (G.V)
 
 let make_point x y = [| G.K.of_float x ; G.K.of_float y |]
 
-module R = Cnt_impl.GenRing (struct type t = P.t end)
-module TestR = Cnt.Test_GenRing (R) (struct let v = make_point 1. 1. end)
-
-module Poly = Geom_shapes.Polygon (P) (R)
+module Poly = Geom_shapes.Polygon (P)
 
 module Path = Geom_path.Make (P)
 module Algo = Geom_algo.Algorithms (Poly) (Path)
@@ -108,7 +106,7 @@ let draw_polys polys () =
 	let draw_single poly =
 		let varray = G.make_vertex_array (Poly.length poly) in
 		let idx = ref 0 in
-		Poly.iter poly (fun p -> G.vertex_array_set varray !idx (Poly.get p) ; incr idx) ;
+		Poly.iter (fun point -> G.vertex_array_set varray !idx point ; incr idx) poly ;
 		G.render G.Line_loop varray (G.Uniq G.white) in
 	List.iter draw_single polys
 

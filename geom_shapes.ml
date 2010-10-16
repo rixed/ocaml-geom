@@ -45,22 +45,54 @@ struct
 end
 
 module Polygon
-	(P_: Geom.POINT)
-	(Ring : Cnt.GENRING with type elmt = P_.t)
-	: Geom.POLYGON with module Point = P_ and type elmt = Ring.elmt =
+	(Point : Geom.POINT)
+	: Geom.POLYGON with module Point = Point =
 struct
-	module Point = P_
-	include Ring
-	type t = Point.t ring
+	module Point = Point
+	module Ring  = Ring_impl.Ring
+	type e = Point.t
+	type t = Point.t Ring.t
 	
+	let empty = Ring.empty
+	let is_empty = Ring.is_empty
+	let singleton = Ring.singleton
+	let length = Ring.length
+	let iter = Ring.iter
+	let iterr = Ring.iterr
+	let iteri = Ring.iteri
+	let iterir = Ring.iterir
+	let fold_left = Ring.fold_left
+	let fold_leftr = Ring.fold_leftr
+	let fold_right = Ring.fold_right
+	let fold_rightr = Ring.fold_rightr
+ 
+	let get = Ring.get
+	let next = Ring.next
+	let prev = Ring.prev
+	let insert_before = Ring.insert_before
+	let insert_after = Ring.insert_after
+	let remove = Ring.remove
+
+	let iter_pairs f t =
+		let rec aux t1 f n =
+			if n > 0 then (
+				f t1 ;
+				aux (next t1) f (n-1)
+			) in
+		let len = ref (length t) in
+		iterr (fun t0 ->
+			decr len ;
+			aux (next t0) (f t0) !len) t
+
 	let print ff poly =
 		let focus = get poly in
 		Format.pp_open_box ff 0 ;
 		Format.pp_print_string ff "{" ; Format.pp_print_space ff () ;
-		iter poly (fun p ->
-			let point = get p in
-			if point == focus then Format.pp_print_string ff "*" ;
-			Point.print ff point ; Format.pp_print_space ff ()) ;
+		iter
+			(fun point ->
+				if point == focus then Format.pp_print_string ff "*" ;
+				Point.print ff point ; Format.pp_print_space ff ())
+			poly ;
 		Format.pp_print_string ff "}" ;
 		Format.pp_close_box ff ();
 end

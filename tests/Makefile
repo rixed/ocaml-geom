@@ -1,11 +1,14 @@
 OCAMLPATH = ../..
 
-PROGRAMS = test.byte test_word.byte test_typeset.byte
+PROGRAMS = test.byte test_word.byte
 
 all: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)
 
-REQUIRES = geom
+REQUIRES = geom glop
+
+OCAMLFLAGS = -rectypes
+OCAMLOPTFLAGS = -rectypes
 
 include ../make.common
 

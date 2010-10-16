@@ -43,10 +43,21 @@ exception Bad_geometry
 module type POLYGON =
 sig
 	module Point : POINT
-	include Cnt.GENRING with type elmt = Point.t
-	type t = Point.t ring
+	include Pfds_intf.ITERABLE with type e = Point.t
 
-	val print : Format.formatter -> t -> unit
+	val get           : t -> Point.t
+	val next          : t -> t
+	val prev          : t -> t
+	val insert_before : t -> Point.t -> t
+	val insert_after  : t -> Point.t -> t
+	val remove        : t -> t
+	val iterr         : (t -> unit) -> t -> unit
+	val iterir        : (int -> t -> unit) -> t -> unit
+	val fold_leftr    : ('b -> t -> 'b) -> 'b -> t -> 'b
+	val fold_rightr   : (t -> 'b -> 'b) -> t -> 'b -> 'b
+
+	val iter_pairs    : (t -> t -> unit) -> t -> unit
+	val print         : Format.formatter -> t -> unit
 end
 
 (** A Path is basically a point list with added functionnalities. *)

@@ -54,17 +54,19 @@ struct
 
 	let area polys =
 		List.fold_left (fun sum poly ->
-			K.add sum (Poly.fold poly (fun p s ->
+			K.add sum (Poly.fold_leftr (fun s p ->
 				K.add s (Point.area (Poly.get p) (Poly.get (Poly.next p))))
-				K.zero))
+				K.zero poly))
 		K.zero polys
 
 	let is_convex_at prev point next =
 		Point.compare_left prev point next >= 0
 
 	let iter_concave poly f =
-		Poly.iter poly (fun pol ->
-			if not (is_convex_at (prev_pt pol) (Poly.get pol) (next_pt pol)) then f pol)
+		Poly.iterr
+			(fun pol ->
+				if not (is_convex_at (prev_pt pol) (Poly.get pol) (next_pt pol)) then f pol)
+			poly
 
 	let is_convex poly =
 		try (
@@ -89,12 +91,12 @@ struct
 		let p0 = Poly.get pol0 in
 		let p1 = Poly.get pol1 in
 		try (
-			Poly.iter pol0 (fun pol ->
+			Poly.iterr (fun pol ->
 				let q0 = Poly.get pol in
 				let q1 = next_pt pol in
 				if q0 != p0 && q0 != p1 &&
 				   q1 != p0 && q1 != p1 &&
-				   Point.intersect p0 p1 q0 q1 then raise Exit) ;
+				   Point.intersect p0 p1 q0 q1 then raise Exit) pol0 ;
 			true
 		) with Exit -> false
 	
@@ -166,9 +168,9 @@ struct
 		if pick_best () = None then (
 			(* Now try each concave point against every points. *)
 			List.iter (fun pol0 ->
-				Poly.iter poly (fun pol1 ->	(* FIXME: we will once again test concave points. *)
+				Poly.iterr (fun pol1 ->	(* FIXME: we will once again test concave points. *)
 					if can_split pol0 pol1 then choose_best pol0 pol1 ()
-				)
+				) poly
 			) !concave_pts
 		) ;
 		match pick_best () with
@@ -179,8 +181,8 @@ struct
 		let rec aux poly0 polys =
 			let connect poly0 poly1 =
 				let res = ref poly0 in
-				Poly.iter poly1 (fun poly ->
-					res := Poly.insert_after !res (Poly.get poly)) ;
+				Poly.iterr (fun poly ->
+					res := Poly.insert_after !res (Poly.get poly)) poly1 ;
 				(* We must copy the points as we disallow a poly to store twice the same physical point *)
 				Poly.insert_after
 					(Poly.insert_after !res
@@ -189,9 +191,9 @@ struct
 			let best_connection poly1 =
 				(* Look for the best merging line *)
 				let choose_best, pick_best = make_chooser () in
-				Poly.iter poly0 (fun pol0 ->
-					Poly.iter poly1 (fun pol1 ->
-						choose_best pol0 pol1 ())) ;
+				Poly.iterr (fun pol0 ->
+					Poly.iterr (fun pol1 ->
+						choose_best pol0 pol1 ()) poly1) poly0 ;
 				pick_best () in
 			if polys = [] then poly0 else (
 				let choose_best, pick_best = make_chooser () in
@@ -225,7 +227,7 @@ struct
 		!res
 	
 	let rec iter_diagonals poly f =
-		Poly.iter_pairs poly (fun p0 p1 -> if not (are_neighbour p0 p1) then f p0 p1)
+		Poly.iter_pairs (fun p0 p1 -> if not (are_neighbour p0 p1) then f p0 p1) poly
 
 	let iter_splitable_diagonals poly f =
 		iter_diagonals poly (fun p0 p1 ->
@@ -250,10 +252,10 @@ struct
 	let intersect_polys p0 p1 polys =
 		let intersect_poly poly =
 			try (
-				Poly.iter poly (fun p ->
+				Poly.iterr (fun p ->
 					let q0 = Poly.get p in
 					let q1 = next_pt p in
-					if Point.intersect ~closed:false p0 p1 q0 q1 then raise Exit) ;
+					if Point.intersect ~closed:false p0 p1 q0 q1 then raise Exit) poly ;
 				false
 			) with Exit -> true in
 		try (
@@ -264,15 +266,15 @@ struct
 
 	let inverse_single poly =
 		let ret = ref Poly.empty in
-		Poly.iter poly (fun p -> ret := Poly.insert_before !ret (Poly.get p)) ;
+		Poly.iter (fun point -> ret := Poly.insert_before !ret point) poly ;
 		!ret
 	
 	let inverse polys = List.map inverse_single polys
 
 	let transform poly f =
 		let new_poly = ref Poly.empty in
-		Poly.iter poly (fun p ->
-			new_poly := Poly.insert_after !new_poly (f (Poly.get p))) ;
+		Poly.iterr (fun p ->
+			new_poly := Poly.insert_after !new_poly (f (Poly.get p))) poly ;
 		!new_poly
 
 	let translate_single_poly poly vec =

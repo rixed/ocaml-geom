@@ -7,7 +7,8 @@ let (face, face_info) =
 		"/usr/share/fonts/truetype/Isabella.ttf" ;
 		"/usr/share/fonts/corefonts/arial.ttf" ;
 		"/usr/share/fonts/ttf-bitstream-vera/Vera.ttf" ;
-		"/usr/share/fonts/alee-fonts/Bandal.ttf" ] in
+		"/usr/share/fonts/alee-fonts/Bandal.ttf" ;
+		"/usr/share/fonts/truetype/freefont/FreeSans.ttf" ] in
 	let rec init_first = function
 		| [] -> failwith "No working font file !"
 		| file :: others ->
@@ -15,16 +16,18 @@ let (face, face_info) =
 				let ret = new_face lib file 0 in
 				Format.printf "Using true type font file %s@." file ;
 				ret
-			with Failure _ -> init_first others in
+			with Failure _ -> (
+				Format.printf "Skip font file %s@." file ;
+				init_first others ) in
 	init_first font_files
 
 module Glyph
-	(Poly_: Geom.POLYGON)
-	(Path_: Geom.PATH with module Point = Poly_.Point)
-	: GLYPH with module Poly = Poly_ and module Path = Path_ =
+	(Poly : Geom.POLYGON)
+	(Path : Geom.PATH with module Point = Poly.Point)
+	: GLYPH with module Poly = Poly and module Path = Path =
 struct
-	module Poly = Poly_
-	module Path = Path_
+	module Poly = Poly
+	module Path = Path
 	module Point = Poly.Point
 	module Algo = Geom_algo.Algorithms (Poly) (Path)
 
@@ -41,7 +44,7 @@ struct
 		let to_point (x, y) =
 			let xs = Poly.Point.K.of_float x in
 			let ys = Poly.Point.K.of_float y in
-			[| xs ; ys ; Poly.Point.K.zero |] in
+			[| xs ; ys |] in
 		let rec path_of_contour next last path =
 			if next > last then path else (
 				match outline.tags.(next) with
@@ -107,16 +110,16 @@ struct
 end
 
 module Word
-	(Glyph_: GLYPH)
-	: WORD with module Glyph = Glyph_ =
+	(Glyph : GLYPH)
+	: WORD with module Glyph = Glyph =
 struct
-	module Glyph = Glyph_
+	module Glyph = Glyph
 	module Poly = Glyph.Poly
 	module Path = Glyph.Path
 	module Point = Poly.Point
 	module Algo = Geom_algo.Algorithms (Poly) (Path)
 
-	type t = (Glyph.t * Point.t) list
+	type t = (Point.t * Glyph.t) list
 
 	let make ?(orientation=Horizontal) str =
 		let rec add_char i word pos =
@@ -126,13 +129,13 @@ struct
 				let c = str.[i] in
 				(* TODO: use also previous char to choose a better glyph for 2 successive chars *)
 				let glyph = Glyph.make c in
-				let adv = match word with
+				let offset = match word with
 				| [] -> pos
-				| (prev_g, _) :: _ ->
+				| (_, prev_g) :: _ ->
 					let advance = Glyph.advance ~orientation prev_g glyph in
 					Point.add pos advance in
-				let next_word = (glyph, adv) :: word in
-				add_char (i+1) next_word adv in
+				let next_word = (offset, glyph) :: word in
+				add_char (i+1) next_word offset in
 		add_char 0 [] Point.zero
 
 	let bbox word = 
@@ -141,7 +144,7 @@ struct
 		   glyph's bboxes translated to match glyph potision in word. *)
 		let rec aux bbox = function
 			| [] -> bbox
-			| (glyph, pos) :: others ->
+			| (pos, glyph) :: others ->
 				let translate_bbox pos = function
 					| Point.Bbox.Empty -> Point.Bbox.Empty
 					| Point.Bbox.Box (x, y) ->
@@ -151,11 +154,6 @@ struct
 				aux new_bbox others in
 		aux Glyph.Poly.Point.Bbox.empty word
 
-	let to_poly word prec =
-		let rec add_glyph polys = function
-			| [] -> polys
-			| (glyph, pos) :: others ->
-				let new_polys = Algo.translate_poly (Glyph.to_poly glyph prec) pos in
-				add_glyph (new_polys @ polys) others in
-		add_glyph [] word
+	let to_polys word prec =
+		List.map (fun (p, g) -> p, Glyph.to_poly g prec) word
 end
