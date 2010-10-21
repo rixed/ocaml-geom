@@ -40,4 +40,4 @@ clean:
 .depend: *.ml *.mli
 	$(OCAMLDEP) -package "$(REQUIRES)" -I .. $^ > $@
 
-include .depend
+-include .depend

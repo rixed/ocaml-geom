@@ -21,4 +21,4 @@ include ../make.common
 clean-spec:
 	@rm -f $(PROGRAMS) $(PROGRAMS:.byte=.opt)
 
-include .depend
+-include .depend

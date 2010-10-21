@@ -43,4 +43,4 @@ clean-spec:
 
 distclean: clean
 
-include .depend
+-include .depend
