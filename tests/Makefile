@@ -10,6 +10,8 @@ REQUIRES = geom glop
 OCAMLFLAGS = -rectypes
 OCAMLOPTFLAGS = -rectypes
 
+ML_SOURCES = test.ml test_word.ml
+
 include ../make.common
 
 .cmo.byte:

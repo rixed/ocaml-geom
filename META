@@ -1,5 +1,5 @@
 description = "Simple computational geometry library"
 version = "1"
-requires = "bricabrac pfds algen camlimages.freetype"
+requires = "bricabrac pfds algen"
 archive(byte) = "geom.cma"
 archive(native) = "geom.cmxa"
