@@ -80,6 +80,47 @@ struct
 			advance_x = advance_x ;
 			advance_y = advance_y }
 
+	(* We keep a cache of all generated glyphs : *)
+	type used_glyph =
+		{ mutable nb_use : int ;
+		  mutable idx    : int ;
+		          polys  : Poly.t list }
+
+	let max_kept_glyphs = 200 (* we keep only this amout of glyphs, the more used *)
+
+	(* Array is ordered in descending nb_use count *)
+	let used_glyphs = Array.init max_kept_glyphs (fun i -> { nb_use = 0 ; idx = i ; polys = [] })
+
+	let glyph_cache = Hashtbl.create max_kept_glyphs (* hash from char_index, prec to used_glyph *)
+
+	let promote_in_cache idx =
+		let nb_use = used_glyphs.(idx).nb_use in
+		let rec promote_once idx =
+			if idx > 0 && nb_use > used_glyphs.(idx-1).nb_use then (
+				(* swap entry idx-1 with entry idx *)
+				let old = used_glyphs.(idx-1) in
+				used_glyphs.(idx-1) <- used_glyphs.(idx) ;
+				used_glyphs.(idx) <- old ;
+				used_glyphs.(idx-1).idx <- idx-1 ;
+				used_glyphs.(idx).idx <- idx ;
+				promote_once (idx-1)
+			) in
+		promote_once idx
+
+	let get_cached key =
+		let used = Hashtbl.find glyph_cache key in
+		used.nb_use <- used.nb_use + 1 ;
+		promote_in_cache used.idx ;
+		used.polys
+
+	let add_cache key polys =
+		(* replace the last element (TODO: keep the idx of the first unused element) *)
+		let idx = max_kept_glyphs-1 in
+		let entry = { nb_use = 1 ; idx = idx ; polys = polys } in
+		used_glyphs.(idx) <- entry ;
+		promote_in_cache idx ;
+		Hashtbl.add glyph_cache key entry
+
 	let to_poly glyph prec =
 		let rec to_polys polys = function
 			| [] -> polys
@@ -88,8 +129,15 @@ struct
 		let is_clockwise polys =
 			Point.K.compare (Algo.area polys) Point.K.zero < 0 in
 			(*0 <> (outline.flags land 4) (* Too bad we can't trust this flag *) *)
-		let polys = to_polys [] glyph.paths in
-		if is_clockwise polys then Algo.inverse polys else polys
+		let build_polys () =
+			let polys = to_polys [] glyph.paths in
+			if is_clockwise polys then Algo.inverse polys else polys in
+		let key = glyph.index, prec in
+		try get_cached key
+		with Not_found ->
+			let polys = build_polys () in
+			add_cache key polys ;
+			polys
 	
 	let bbox glyph =
 		let rec extend_bbox current = function
