@@ -4,11 +4,12 @@ open Freetype
 let lib = init ()
 let (face, face_info) =
 	let font_files = [
-		"/usr/share/fonts/truetype/Isabella.ttf" ;
+(*		"/usr/share/fonts/truetype/Isabella.ttf" ;*)
 		"/usr/share/fonts/corefonts/arial.ttf" ;
 		"/usr/share/fonts/ttf-bitstream-vera/Vera.ttf" ;
 		"/usr/share/fonts/alee-fonts/Bandal.ttf" ;
-		"/usr/share/fonts/truetype/freefont/FreeSans.ttf" ] in
+		"/usr/share/fonts/truetype/freefont/FreeSans.ttf" ;
+		"/usr/share/fonts/tahoma.ttf" ] in
 	let rec init_first = function
 		| [] -> failwith "No working font file !"
 		| file :: others ->
