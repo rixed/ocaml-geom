@@ -44,12 +44,12 @@ uninstall:
 reinstall: uninstall install
 
 check: $(ARCHIVE) $(XARCHIVE)
-	@make -C tests all opt
+	$(MAKE) -C tests all opt
 	@for t in tests/*.byte tests/*.opt ; do $$t ; done
 	@echo Ok
 
 clean-spec:
-	@make -C tests clean
+	$(MAKE) -C tests clean
 
 distclean: clean
 
