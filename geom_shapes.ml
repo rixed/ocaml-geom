@@ -42,6 +42,10 @@ struct
 		((at_left q0 q1 p0) ^^ (at_left q0 q1 p1))
 
 	let copy p = add p zero
+
+	let center p1 p2 =
+		let p = add p1 p2 in
+		mul (K.half K.one) p
 end
 
 module Polygon

@@ -19,6 +19,8 @@ sig
 	val copy : t -> t
 	
 	val area : t -> t -> K.t
+
+	val center : t -> t -> t
 end
 
 module type POINT_SET =
@@ -123,6 +125,7 @@ sig
 	val can_split : Poly.t -> Poly.t -> bool
 	val iter_diagonals : Poly.t -> (Poly.t -> Poly.t -> unit) -> unit
 	val iter_splitable_diagonals : Poly.t -> (Poly.t -> Poly.t -> unit) -> unit
+	val iter_edges : Poly.t -> (Poly.Point.t -> Poly.Point.t -> unit) -> unit
 
 	val convex_partition : Poly.t list -> Poly.t list
 	val triangulate : Poly.t list -> Poly.t list
@@ -137,6 +140,14 @@ sig
 	(** Close the path and convert it to a Polygon. *)
 	val poly_of_path : Path.t -> Path.Point.K.t -> Poly.t
 	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.Point.t
+	val bbox_single_poly : Poly.t -> Poly.Point.Bbox.t
+	val bbox : Poly.t list -> Poly.Point.Bbox.t
+
+	(* Rasterization *)
+	val rasterize : Poly.t list ->
+		(int (* x_start *) -> int (* x_stop *) -> int (* y *) -> Poly.Point.K.t (* alpha *) -> unit) ->
+		unit
+	(* [iter_rasters polys fun] will call [fun x y alpha] for every pixel of the polygon *)
 
 	(* Some utilities *)
 	val path_of_points : Poly.Point.t list -> Path.t

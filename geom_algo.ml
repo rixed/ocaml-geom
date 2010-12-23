@@ -233,6 +233,9 @@ struct
 		iter_diagonals poly (fun p0 p1 ->
 			if can_split p0 p1 then f p0 p1)
 
+	let iter_edges poly f =
+		Poly.iterr (fun p -> f (Poly.get p) (Poly.get (Poly.next p))) poly
+
 	let triangulate_slow polys =
 		let convex_polys = convex_partition_slow polys in
 		let res = ref [] in
@@ -617,6 +620,103 @@ struct
 	let triangulate = Monotonizer.triangulate
 			
 	let convex_partition polys = convex_partition_slow polys
+
+	let bbox_single_poly poly =
+		Poly.fold_left (fun bb p -> Point.Bbox.add bb p) Point.Bbox.empty poly
+
+	let bbox polys =
+		List.fold_left (fun bb p -> Point.Bbox.union bb (bbox_single_poly p)) Point.Bbox.empty polys
+
+	(* Rasterization *)
+
+	type coverage_cell = { x : int ; cover : K.t ; area : K.t }
+	let rasterize polys f =
+		(* We first build an array of ordered lists of cells (one for each scan line),
+		 * where a cell is an x position and a coverage ratio (ie. a number between -1 and 1).
+		 * We have cells only for interresting locations, ie where polygon edges are present.
+		 * Then we extend these values and call f for all regions with a coverage ratio > 0.
+		 *)
+		let rasterize_non_empty ym yM =
+			let ym_int = K.to_int ym in
+			let y_to_idx y = (K.to_int y) - ym_int in
+			let nb_y = (y_to_idx yM) + 1 in
+			let cells_arr = Array.init nb_y (fun _ -> []) in
+			(* Now for each edges, we progress from starting point to next point on pixel grid
+			 * (ie either final edge point if it's in same grid cell, or next intersection between
+			 * the edge and grid boundaries), adding the coverage for this segment. *)
+			let rasterize_poly poly =
+				let add_coverage p1 p2 =
+					(* both p1 and p2 are within the same cell, not on the same border *)
+					let p = Point.center p1 p2 in	(* so that p is not on a cell border *)
+					let idx = y_to_idx p.(1) in
+					let cover = K.sub p1.(1) p2.(1) in
+					let cell_end_x = K.ceil p.(0) in
+					let area = K.mul cover (K.sub cell_end_x p.(0)) in
+					cells_arr.(idx) <-
+						{ x     = K.to_int p.(0) ;
+						  cover = cover ;
+						  area  = area } :: cells_arr.(idx) in
+				let do_clip p1 p2 d next_d =
+					let nd = d lxor 1 in
+					let dp = Point.sub p2 p1 in
+					let nd_diff = K.div
+						(K.mul dp.(nd) (K.sub next_d p1.(d)))
+						dp.(d) in
+					let next_nd = K.add p1.(nd) nd_diff in
+					Array.init 2 (fun i -> if i = d then next_d else next_nd) in
+				let clip_in_dir d p1 p2 =
+					if K.compare p1.(d) p2.(d) <= 0 then (
+						let next_d = K.ceil p1.(d) in
+						let next_d = if K.compare next_d p1.(d) = 0 then
+							K.add next_d K.one else next_d in
+						if p2.(d) > next_d then do_clip p1 p2 d next_d else p2
+					) else (
+						let next_d = K.floor p1.(d) in
+						let next_d = if K.compare next_d p1.(d) = 0 then
+							K.sub next_d K.one else next_d in
+						if p2.(d) < next_d then do_clip p1 p2 d next_d else p2
+					) in
+				let rec add_edge p1 p2 =
+					if Point.compare p1 p2 <> 0 then (
+						let p' = clip_in_dir 0 p1 p2 in
+						let p' = clip_in_dir 1 p1 p' in
+						add_coverage p1 p' ; (* will finds the cell using the center of p1,p2 *)
+						add_edge p' p2
+					) in
+				iter_edges poly add_edge in
+			List.iter rasterize_poly polys;
+			(* Then for each scanline, we call f for every plotted cell *)
+			let scan_one_line idx cells =
+				(* iter through the sorted cells, accumulating area when x don't change
+				 * and cover along the scanline, then calling f with area, x_start and x_end. *)
+				let y = ym_int + idx in
+				let rec aux last = function
+					| [] ->
+						f last.x last.x y last.area ;
+						assert (K.compare K.zero last.cover = 0)
+					| next::cells ->
+						if last.x = next.x then
+							aux { next with cover = K.add last.cover next.cover ;
+							                area  = K.add last.area  next.area } cells
+						else (
+							assert (next.x > last.x) ;
+							f last.x last.x y last.area ;
+							if last.x+1 <= next.x-1 then
+								f (last.x+1) (next.x-1) y last.cover ;
+							aux { next with cover = K.add last.cover next.cover ;
+							                area  = K.add last.cover next.area } cells
+						) in
+				(* sort the cells along x *)
+				let sorted_cells = List.sort (fun c1 c2 -> compare c1.x c2.x) cells in
+				match sorted_cells with
+				| [] -> ()
+				| cell::cells -> aux cell cells in
+			Array.iteri scan_one_line cells_arr
+		in
+		match bbox polys with
+		| Point.Bbox.Box ([| _ ; ym |], [| _ ; yM |]) when K.compare ym yM < 0 ->
+			rasterize_non_empty (K.floor ym) (K.ceil yM)
+		| _ -> () (* empty bbox *)
 
 	(* Utilities *)
 
