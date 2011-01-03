@@ -22,4 +22,5 @@ sig
 	val make     : ?orientation:orientation -> string -> t
 	val bbox     : t -> Glyph.Poly.Point.Bbox.t
 	val to_polys : t -> Glyph.Path.Point.K.t -> (Glyph.Poly.Point.t * Glyph.Poly.t list) list
+	(* [to_polys word prec] returns a list of offset*polys *)
 end

@@ -293,10 +293,13 @@ struct
 	let poly_of_path path res =
 		let poly = ref Poly.empty in
 		Path.iter path res (fun pt ->
-			if not (Poly.is_empty !poly) then (
-				if Point.eq (Poly.get !poly) pt then Format.printf "Adding twice point %a@\n" Point.print pt
-			) ;
-			poly := Poly.insert_after !poly pt) ;
+			if
+				(Poly.is_empty !poly) ||
+				not (
+					(Point.eq (Poly.get !poly) pt) ||
+					(Point.eq (Poly.get (Poly.next !poly)) pt)
+				) then
+				poly := Poly.insert_after !poly pt) ;
 		!poly
 	
 	module Monotonizer =

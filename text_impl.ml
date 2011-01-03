@@ -47,31 +47,40 @@ struct
 			let xs = Poly.Point.K.of_float x in
 			let ys = Poly.Point.K.of_float y in
 			[| xs ; ys |] in
-		let rec path_of_contour next last path =
+		let rec next_point first last n =
+			if n <= last then n else next_point first last (first + n - last - 1) in
+		let rec path_of_contour next first last path =
 			if next > last then path else (
 				match outline.tags.(next) with
-				| On_point -> path_of_contour (next+1) last
+				| On_point -> path_of_contour (next+1) first last
 					(Path.extend path (to_point outline.points.(next)) [] Path.make_straight_line)
 				| Off_point_conic ->
-					if next + 1 > last then path (* Sometime the outline ends on a point conic *) else (
-						let middle_point (x1,y1) (x2,y2) = ((x1 +. x2) /. 2., (y1 +. y2) /. 2.) in
-						let (next_current, next_next) =
-							if outline.tags.(next+1) = On_point then
-								(outline.points.(next+1), next+2)
-							else
-								(middle_point outline.points.(next) outline.points.(next+1), next+1)
-						in
-						path_of_contour next_next last
-							(Path.extend path (to_point next_current) [to_point outline.points.(next)] Path.make_bezier_curve)
-					)
-				| Off_point_cubic -> path_of_contour (next+3) last
-					(Path.extend path (to_point outline.points.(next+2))
-						[to_point outline.points.(next) ; to_point outline.points.(next+1)] Path.make_bezier_curve)
+					let next_s = next_point first last (next+1) in
+					let middle_point (x1,y1) (x2,y2) = ((x1 +. x2) /. 2., (y1 +. y2) /. 2.) in
+					let next_current, next_next = (match outline.tags.(next_s) with
+						| On_point -> (* normal case : on,  off, on *)
+							(outline.points.(next_s), next+1)
+						| Off_point_conic -> (* special case : on, off, off, on *)
+							(middle_point outline.points.(next) outline.points.(next_s), next+1)
+						| Off_point_cubic -> (* bug *)
+							failwith "Bad font encoding") in
+					path_of_contour next_next first last
+						(Path.extend path (to_point next_current)
+							[ to_point outline.points.(next) ]
+							Path.make_bezier_curve)
+				| Off_point_cubic ->
+					let next_s  = next_point first last (next+1)
+					and next_ss = next_point first last (next+2) in
+					path_of_contour (next+3) first last
+						(Path.extend path (to_point outline.points.(next_ss))
+							[ to_point outline.points.(next) ;
+							  to_point outline.points.(next_s) ]
+							Path.make_bezier_curve)
 			) in
 		let get_path c =
 			let first = if c = 0 then 0 else outline.contours.(c-1)+1 in
 			let last = outline.contours.(c) in
-			path_of_contour (first+1) last (Path.empty (to_point outline.points.(first))) in
+			path_of_contour (first+1) first last (Path.empty (to_point outline.points.(first))) in
 		let get_all_paths () =
 			let paths = ref [] in
 			for c = 0 to outline.n_contours-1 do paths := get_path c :: !paths done ;
