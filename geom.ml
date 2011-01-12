@@ -152,6 +152,7 @@ sig
 	(* Some utilities *)
 	val path_of_points : Poly.Point.t list -> Path.t
 	val poly_of_points : Poly.Point.t list -> Poly.t
+	val poly_of_ascii_repr : string list -> Poly.t
 	val unit_square : Poly.t
 end
 

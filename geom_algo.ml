@@ -734,6 +734,21 @@ struct
 	let poly_of_points points =
 		List.fold_left Poly.insert_after Poly.empty points
 
+	let poly_of_ascii_repr repr =
+		let nb_lines = List.length repr in
+		let rec list_of_line y x prevs line =
+			if x >= String.length line then prevs else
+			let c = line.[x] in
+			let next_prevs = if c = ' ' then prevs else (c, x, nb_lines-y-1)::prevs in
+			list_of_line y (x+1) next_prevs line in
+		let rec list_of_ascii y prevs = function
+			| [] -> prevs
+			| line::lines -> list_of_ascii (y+1) (list_of_line y 0 prevs line) lines in
+		let charpos = list_of_ascii 0 [] repr in
+		let charpos_s = List.sort (fun (c1, _, _) (c2, _, _) -> compare c1 c2) charpos in
+		let point_of_charpos (_, x, y) = [| K.of_int x; K.of_int y |] in
+		poly_of_points (List.map point_of_charpos charpos_s)
+
 	let unit_square = poly_of_points
 		[ [| K.zero ; K.zero |] ;
 		  [| K.one  ; K.zero |] ;
