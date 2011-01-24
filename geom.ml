@@ -19,6 +19,7 @@ sig
 	val copy : t -> t
 	
 	val area : t -> t -> K.t
+	(** [area a b] returns the area of the triangle O a b *)
 
 	val center : t -> t -> t
 end
@@ -62,7 +63,9 @@ sig
 	val print         : Format.formatter -> t -> unit
 end
 
-(** A Path is basically a point list with added functionnalities. *)
+(** A Path is basically a point list. We consider it "closed" when the last point is at the same
+ * location (Point.eq) that the first one (which is trivially true when there is one one point,
+ * and false when the path is empty). *)
 module type PATH =
 sig
 	type t
@@ -82,6 +85,12 @@ sig
 	(** Return the empty path starting at given position. *)
 	val empty : point -> t
 
+	(** Tells if a path is empty *)
+	val is_empty : t -> bool
+
+	(** Tells if a path is closed (ie. last point eq first point) *)
+	val is_closed : t -> bool
+
 	(** Extend a path *)
 	val extend : t -> point (* next one *) -> point list (* control pts *) -> interpolator -> t
 
@@ -96,6 +105,8 @@ sig
 	(* FIXME: Point here should be Vector *)
 	val translate : t -> point -> t
 
+	val inverse : t -> t
+
 	(** Return the center position of a path. *)
 	val center : t -> point
 
@@ -106,8 +117,11 @@ sig
 	val scale_along : point (*center*) -> point (*axis*) -> Point.K.t -> t -> t
 	
 	val iter : t -> Point.K.t -> (point -> unit) -> unit
-	
+	val iter_edges : t -> (point -> point -> unit) -> unit
+
 	val bbox : t -> Point.Bbox.t
+
+	val area_min : t -> Point.K.t
 
 	val print : Format.formatter -> t -> unit
 end
@@ -117,7 +131,9 @@ sig
 	module Poly : POLYGON
 	module Path : PATH with module Point = Poly.Point
 
-	val area : Poly.t list -> Poly.Point.K.t
+	val area_polys : Poly.t list -> Poly.Point.K.t
+	val area_paths_min : Path.t list -> Path.Point.K.t
+	(** [area_paths_min paths] returns the area covered by the path as if they were composed of straight lines only *)
 	val is_convex_at : Poly.Point.t -> Poly.Point.t -> Poly.Point.t -> bool
 	val is_convex : Poly.t -> bool
 	val in_cone : Poly.t -> Poly.Point.t -> bool
@@ -130,8 +146,9 @@ sig
 	val convex_partition : Poly.t list -> Poly.t list
 	val triangulate : Poly.t list -> Poly.t list
 	val monotonize : Poly.t list -> Poly.t list
-	val inverse : Poly.t list -> Poly.t list
+	val inverse_polys : Poly.t list -> Poly.t list
 	val inverse_single : Poly.t -> Poly.t
+	val inverse_paths : Path.t list -> Path.t list
 	val simplify : Poly.t list -> Poly.t
 	val translate_poly : Poly.t list -> Poly.Point.t -> Poly.t list
 	val translate_single_poly : Poly.t -> Poly.Point.t -> Poly.t

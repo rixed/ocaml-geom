@@ -23,7 +23,7 @@ let bbox_diag = Point.Bbox.diagonal (Glyph.bbox o)
 let letters_view =
 	let rec build_ppolys ppolys step prec pos =
 		if step > 0 then
-			let polys   = Glyph.to_poly o prec in
+			let polys   = Glyph.to_polys o prec in
 			let ppolys  = (pos, polys) :: ppolys in
 			let prec    = G.K.half (G.K.half prec) in
 			let pos     = Point.add [| bbox_diag.(0) ; G.K.zero |] pos in

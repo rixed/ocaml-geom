@@ -31,7 +31,7 @@ let test_path =
 
 let letter_a =
 	Algo.scale_poly
-		(Glyph.to_poly (Glyph.make 'a') (G.K.of_float 1.2))
+		(Glyph.to_polys (Glyph.make 'a') (G.K.of_float 1.2))
 		P.zero
 		(G.K.of_float 0.1)
 

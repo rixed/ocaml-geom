@@ -81,10 +81,14 @@ struct
 			let first = if c = 0 then 0 else outline.contours.(c-1)+1 in
 			let last = outline.contours.(c) in
 			path_of_contour (first+1) first last (Path.empty (to_point outline.points.(first))) in
+		let is_clockwise paths =
+			(*0 <> (outline.flags land 4) (* Too bad we can't trust this flag *) *)
+			let area = Algo.area_paths_min paths in
+			Point.K.compare area Point.K.zero < 0 in
 		let get_all_paths () =
 			let paths = ref [] in
 			for c = 0 to outline.n_contours-1 do paths := get_path c :: !paths done ;
-			!paths in
+			if is_clockwise !paths then Algo.inverse_paths !paths else !paths in
 		{
 			index = index ;
 			paths = get_all_paths () ;
@@ -132,21 +136,17 @@ struct
 		promote_in_cache idx ;
 		Hashtbl.add glyph_cache key entry
 
-	let to_poly glyph prec =
+	let to_paths glyph = glyph.paths
+
+	let to_polys glyph prec =
 		let rec to_polys polys = function
 			| [] -> polys
 			| path :: other ->
 				to_polys (Algo.poly_of_path path prec :: polys) other in
-		let is_clockwise polys =
-			Point.K.compare (Algo.area polys) Point.K.zero < 0 in
-			(*0 <> (outline.flags land 4) (* Too bad we can't trust this flag *) *)
-		let build_polys () =
-			let polys = to_polys [] glyph.paths in
-			if is_clockwise polys then Algo.inverse polys else polys in
 		let key = glyph.index, prec in
 		try get_cached key
 		with Not_found ->
-			let polys = build_polys () in
+			let polys = to_polys [] glyph.paths in
 			add_cache key polys ;
 			polys
 	
@@ -214,5 +214,8 @@ struct
 		aux Glyph.Poly.Point.Bbox.empty word
 
 	let to_polys word prec =
-		List.map (fun (p, g) -> p, Glyph.to_poly g prec) word
+		List.map (fun (p, g) -> p, Glyph.to_polys g prec) word
+	
+	let to_paths word =
+		List.map (fun (p, g) -> p, Glyph.to_paths g) word
 end

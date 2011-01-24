@@ -52,12 +52,14 @@ struct
 	let next_pt p = Poly.get (Poly.next p)
 	let prev_pt p = Poly.get (Poly.prev p)
 
-	let area polys =
-		List.fold_left (fun sum poly ->
-			K.add sum (Poly.fold_leftr (fun s p ->
-				K.add s (Point.area (Poly.get p) (Poly.get (Poly.next p))))
-				K.zero poly))
-		K.zero polys
+	let area_polys polys =
+		List.fold_left
+			(Poly.fold_leftr (fun s p ->
+				K.add s (Point.area (Poly.get p) (Poly.get (Poly.next p)))))
+			K.zero polys
+	
+	let area_paths_min paths =
+		List.fold_left (fun s p -> K.add s (Path.area_min p)) K.zero paths
 
 	let is_convex_at prev point next =
 		Point.compare_left prev point next >= 0
@@ -272,7 +274,9 @@ struct
 		Poly.iter (fun point -> ret := Poly.insert_before !ret point) poly ;
 		!ret
 	
-	let inverse polys = List.map inverse_single polys
+	let inverse_polys polys = List.map inverse_single polys
+
+	let inverse_paths paths = List.map Path.inverse paths
 
 	let transform poly f =
 		let new_poly = ref Poly.empty in
@@ -442,7 +446,7 @@ struct
 			if e1l == e2l && e1h == e2h then 0
 			else
 				let poly = (Poly.insert_after (Poly.insert_after (Poly.insert_after (Poly.insert_after Poly.empty e1h) e1l) e2l) e2h) in
-				let cmp = K.compare (area [poly]) K.zero in
+				let cmp = K.compare (area_polys [poly]) K.zero in
 				if cmp <> 0 then cmp
 				else
 					(* Can happen if e1 and e2 share a vertex, or are colinear.

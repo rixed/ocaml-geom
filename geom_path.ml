@@ -50,6 +50,16 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 
 	let empty start = { start = start ; edges = [] }
 
+	let is_empty path = path.edges = []
+
+	let is_closed path =
+		let rec last_point = function
+			| [] -> path.start
+			| [ p, _, _ ] -> p
+			| _ :: e' -> last_point e' in
+		let last = last_point path.edges and first = path.start in
+		Point.eq first last
+
 	let extend path next ctrls interp = (match path.edges with
 		| (pt, _, _) :: _ -> if 0 = Point.compare pt next then
 			Format.printf "Path edge of no length at point %a@\n" Point.print pt
@@ -65,6 +75,13 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 			Point.add p disp, List.map (fun p -> Point.add p disp) ctrls, i in
 		{ start = Point.add path.start disp ; edges = List.map edge_translate path.edges }
 
+	let rec inverse path = match path.edges with
+		| [] -> path
+		| [target, ctrls, interp] ->
+			{ start = target ; edges = [ path.start, List.rev ctrls, interp ] }
+		| (target, ctrls, interp) :: e' ->
+			extend (inverse { start = target ; edges = e' }) path.start (List.rev ctrls) interp
+		
 	let center path =
 		(* FIXME: we should add the center of each edge instead of adding the starting point and every edge's last *)
 		let add_pos p (n, _, _) = Point.add p n in
@@ -143,6 +160,19 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 				aux stop rest
 		in
 		aux path.start path.edges
+
+	let iter_edges path f =
+		let rec aux prec = function
+			| [] -> f prec path.start
+			| (stop, _, _) :: e' -> f prec stop ; aux stop e'
+		in
+		if not (is_empty path) then aux path.start path.edges
+	
+	let area_min path =
+		let s = ref Point.K.zero in
+		let add_edge a b = s := Point.K.add !s (Point.area a b) in
+		iter_edges path add_edge ;
+		!s
 
 	let bbox path =
 		let union_ctls bbox ctl = Point.Bbox.add bbox ctl in
