@@ -1,6 +1,6 @@
 OCAMLPATH = ../..
 
-PROGRAMS = test.byte test_word.byte test_prec.byte
+PROGRAMS = test.byte test_word.byte test_prec.byte test_rounded.byte
 
 all: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)

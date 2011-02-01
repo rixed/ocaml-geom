@@ -139,14 +139,10 @@ struct
 	let to_paths glyph = glyph.paths
 
 	let to_polys glyph prec =
-		let rec to_polys polys = function
-			| [] -> polys
-			| path :: other ->
-				to_polys (Algo.poly_of_path path prec :: polys) other in
 		let key = glyph.index, prec in
 		try get_cached key
 		with Not_found ->
-			let polys = to_polys [] glyph.paths in
+			let polys = Algo.polys_of_paths glyph.paths prec in
 			add_cache key polys ;
 			polys
 	

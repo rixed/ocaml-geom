@@ -306,6 +306,8 @@ struct
 				poly := Poly.insert_after !poly pt) ;
 		!poly
 	
+	let polys_of_paths paths res = List.map (fun path -> poly_of_path path res) paths
+
 	module Monotonizer =
 	struct
 		type vertex_kind = Start | End | Regular_down | Regular_up | Split | Merge

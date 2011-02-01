@@ -180,4 +180,56 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 			List.fold_left union_ctls (Point.Bbox.add bbox dest) ctls in
 		List.fold_left union_edges (Point.Bbox.make path.start) path.edges
 
+	let rounded ?(radius=Point.K.one) paths =
+		let first_stop path = match List.hd path.edges with stop, _, _ -> stop in
+		let shorten a b d =
+			let v = Point.sub b a in
+			let r = Point.K.div d (Point.norm v) in
+			let ratio = Point.K.sub Point.K.one r in
+			Point.add a (Point.mul ratio v) in
+		let rec aux path path' start = function
+			| [] -> path'
+			| [stop, ctrls, interp] ->
+				if Point.eq stop path.start then (
+					let d1 = shorten start stop radius
+					and d2 = shorten (first_stop path) path.start radius in
+					let path' = extend path' d1 ctrls interp in
+					let path' = extend path' d2 [ stop ] make_bezier_curve in
+					{ path' with start = d2 }
+				) else path'
+			| (stop1, ctrls1, interp1)::(stop2, ctrls2, interp2)::edges ->
+				let d1 = shorten start stop1 radius
+				and d2 = shorten stop2 stop1 radius in
+				let path' = extend path' d1 ctrls1 interp1 in
+				let path' = extend path' d2 [ stop1 ] make_bezier_curve in
+				aux path path' d2 ((stop2, ctrls2, interp2)::edges) in
+		let rounded_single path = aux path (empty path.start) path.start path.edges in
+		List.map rounded_single paths
+end
+
+module Draw (Path : Geom.PATH) =
+struct
+	open Path
+	module K = Point.K
+
+	let extend_straight t next = extend t next [] make_straight_line
+	let ( -- ) = extend_straight
+
+	let rectangle corner00 corner10 =
+		let corner01 = [| corner10.(0) ; corner00.(1) |]
+		and corner11 = [| corner00.(0) ; corner10.(1) |] in
+		(empty corner00) -- corner01 -- corner10 -- corner11 -- corner00
+
+	let rectangle_of_size center width height =
+		let diag = [| K.half width ; K.half height |] in
+		let corner00 = Point.sub center diag
+		and corner10 = Point.add center diag in
+		rectangle corner00 corner10
+	
+	let box corner00 corner10 width =
+		let thickness = [| width ; width |] in
+		let corner00' = Point.add corner00 thickness
+		and corner10' = Point.sub corner10 thickness in
+		[ rectangle corner00 corner10 ; inverse (rectangle corner00' corner10') ]
+	
 end

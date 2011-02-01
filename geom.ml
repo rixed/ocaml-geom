@@ -124,6 +124,8 @@ sig
 	val area_min : t -> Point.K.t
 
 	val print : Format.formatter -> t -> unit
+
+	val rounded : ?radius:Point.K.t -> t list -> t list
 end
 
 module type ALGORITHMS =
@@ -156,6 +158,7 @@ sig
 	val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.t
 	(** Close the path and convert it to a Polygon. *)
 	val poly_of_path : Path.t -> Path.Point.K.t -> Poly.t
+	val polys_of_paths : Path.t list -> Path.Point.K.t -> Poly.t list
 	val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.Point.t
 	val bbox_single_poly : Poly.t -> Poly.Point.Bbox.t
 	val bbox : Poly.t list -> Poly.Point.Bbox.t
