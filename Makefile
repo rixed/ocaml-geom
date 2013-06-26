@@ -7,8 +7,7 @@ top: geom.top
 byte: geom.cma
 opt: geom.cmxa
 
-CLIB = libft2.a
-LIBS = -cclib -lfreetype
+LIBS = -cclib -lfreetype -cclib -lft2
 
 NAME = geom
 
@@ -34,10 +33,10 @@ libft2.a: $(C_SOURCES:.c=.o)
 	$(AR) rcs $@ $^
 
 $(ARCHIVE): $(ML_OBJS) libft2.a
-	$(OCAMLC)   -package "$(REQUIRES)" -custom -linkpkg $(OCAMLFLAGS) $(ML_OBJS) $(CLIB) $(LIBS) -a -o $@
+	$(OCAMLC)   -package "$(REQUIRES)" -custom -linkpkg $(OCAMLFLAGS) $(ML_OBJS) $(LIBS) -a -o $@
 
 $(XARCHIVE): $(ML_XOBJS) libft2.a
-	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $(ML_XOBJS) $(CLIB) $(LIBS) -a -o $@
+	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $(ML_XOBJS) $(LIBS) -a -o $@
 
 geom.top: $(ARCHIVE)
 	$(OCAMLMKTOP) -o $@ -package "findlib,$(REQUIRES)" -linkpkg $(ARCHIVE)
