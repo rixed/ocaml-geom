@@ -1,6 +1,6 @@
 OCAMLPATH = ../..
 
-PROGRAMS = test.byte test_word.byte test_prec.byte test_rounded.byte
+PROGRAMS = test.byte test_word.byte test_prec.byte test_rounded.byte test_inside.byte
 
 all: libft2.a byte opt
 byte: $(PROGRAMS)

@@ -170,7 +170,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		let s = ref Point.K.zero in
 		let add_edge a b = s := Point.K.add !s (Point.area a b) in
 		iter_edges path add_edge ;
-		!s
+		Point.K.half !s
 
 	let bbox path =
 		let union_ctls bbox ctl = Point.Bbox.add bbox ctl in

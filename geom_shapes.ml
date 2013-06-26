@@ -72,6 +72,11 @@ struct
 			decr len ;
 			aux (next t0) (f t0) !len) t
 
+    let iter_edges t f =
+        iterr (fun t ->
+            let p0 = get t and p1 = get (next t) in
+            f p0 p1) t
+
 	let print ff poly =
 		let focus = get poly in
 		Format.pp_open_box ff 0 ;

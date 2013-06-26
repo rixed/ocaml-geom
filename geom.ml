@@ -19,7 +19,7 @@ sig
 	val copy : t -> t
 	
 	val area : t -> t -> K.t
-	(** [area a b] returns the area of the triangle O a b *)
+	(** [area a b] returns the area of the parallelogram build from O a and b *)
 
 	val center : t -> t -> t
 end
@@ -60,6 +60,7 @@ sig
 	val fold_rightr   : (t -> 'b -> 'b) -> t -> 'b -> 'b
 
 	val iter_pairs    : (t -> t -> unit) -> t -> unit
+	val iter_edges    : t -> (Point.t -> Point.t -> unit) -> unit
 	val print         : Format.formatter -> t -> unit
 end
 
@@ -142,12 +143,15 @@ sig
 	val in_cone : Poly.t -> Poly.Point.t -> bool
 	val is_diagonal : Poly.t -> Poly.t -> bool
 	val can_split : Poly.t -> Poly.t -> bool
+    val is_inside_poly : Poly.t -> Poly.Point.t -> bool
+    val is_inside_path : Path.Point.K.t -> Path.t -> Path.Point.t -> bool
 	val iter_diagonals : Poly.t -> (Poly.t -> Poly.t -> unit) -> unit
 	val iter_splitable_diagonals : Poly.t -> (Poly.t -> Poly.t -> unit) -> unit
-	val iter_edges : Poly.t -> (Poly.Point.t -> Poly.Point.t -> unit) -> unit
 
 	val convex_partition : Poly.t list -> Poly.t list
 	val triangulate : Poly.t list -> Poly.t list
+	val triangulate_slow : Poly.t list -> Poly.t list
+    val intersect_polys : Poly.Point.t -> Poly.Point.t -> Poly.t list -> bool
 	val monotonize : Poly.t list -> Poly.t list
 	val inverse_polys : Poly.t list -> Poly.t list
 	val inverse_single : Poly.t -> Poly.t
@@ -174,6 +178,7 @@ sig
 	val path_of_points : Poly.Point.t list -> Path.t
 	val poly_of_points : Poly.Point.t list -> Poly.t
 	val poly_of_ascii_repr : string list -> Poly.t
+    (** Build a polygon from a list of strings where letters are connected in alphabetic order *)
 	val unit_square : Poly.t
 end
 

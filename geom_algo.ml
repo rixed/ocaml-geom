@@ -53,10 +53,11 @@ struct
 	let prev_pt p = Poly.get (Poly.prev p)
 
 	let area_polys polys =
-		List.fold_left
-			(Poly.fold_leftr (fun s p ->
-				K.add s (Point.area (Poly.get p) (Poly.get (Poly.next p)))))
-			K.zero polys
+        K.half
+            (List.fold_left
+                (Poly.fold_leftr (fun s p ->
+                    K.add s (Point.area (Poly.get p) (Poly.get (Poly.next p)))))
+                K.zero polys)
 	
 	let area_paths_min paths =
 		List.fold_left (fun s p -> K.add s (Path.area_min p)) K.zero paths
@@ -125,6 +126,37 @@ struct
 		let new_pol = (Poly.insert_after (Poly.insert_after (Poly.empty) final_point) first_point) in
 		move_point (Poly.next pol0) new_pol
 
+    let is_inside iter point =
+        let nb_intersect = ref 0 in
+        iter (fun p0 p1 ->
+            if (K.compare p1.(1) point.(1) > 0 && K.compare p0.(1) point.(1) <= 0) ||
+               (K.compare p0.(1) point.(1) > 0 && K.compare p1.(1) point.(1) <= 0) then (
+                (* compute location of intersection *)
+                let ( * ) = K.mul and ( - ) = K.sub and ( + ) = K.add and ( / ) = K.div in
+                let x = p0.(0) + ((p0.(1) - point.(1)) * (p1.(0) - p0.(0))) / (p0.(1) - p1.(1)) in
+                if K.compare x point.(0) > 0 then incr nb_intersect
+            )) ;
+        !nb_intersect land 1 = 1
+
+    let is_inside_poly poly point =
+        is_inside (Poly.iter_edges poly) point
+
+    let is_inside_path prec path point =
+        let prev_point = ref None
+        and first_point = ref None in
+        let iter f = 
+            Path.iter prec path (fun p ->
+                (match !prev_point with
+                | None -> first_point := Some p
+                | Some pp -> f pp p) ;
+                prev_point := Some p) ;
+            match !first_point with
+            | None -> ()
+            | Some fp ->
+                let pp = Bricabrac.unopt !prev_point in
+                if pp != fp then f pp fp in
+        is_inside iter point
+(*
 	let focus_on poly p =
 		(* Return the same poly, focused on p *)
 		let first_point = Poly.get poly in
@@ -137,7 +169,7 @@ struct
 	let split_by_points poly p0 p1 =
 		(* Look for positions of these points, then use split_by *)
 		split_by (focus_on poly p0) (focus_on poly p1)
-
+*)
 	let make_chooser () =
 		let best_segment = ref None in
 		let best_dist = ref None in	(* Cache best_segment's length *)
@@ -234,9 +266,6 @@ struct
 	let iter_splitable_diagonals poly f =
 		iter_diagonals poly (fun p0 p1 ->
 			if can_split p0 p1 then f p0 p1)
-
-	let iter_edges poly f =
-		Poly.iterr (fun p -> f (Poly.get p) (Poly.get (Poly.next p))) poly
 
 	let triangulate_slow polys =
 		let convex_polys = convex_partition_slow polys in
@@ -692,7 +721,7 @@ struct
 						add_coverage p1 p' ; (* will finds the cell using the center of p1,p2 *)
 						add_edge p' p2
 					) in
-				iter_edges poly add_edge in
+				Poly.iter_edges poly add_edge in
 			List.iter rasterize_poly polys;
 			(* Then for each scanline, we call f for every plotted cell *)
 			let scan_one_line idx cells =
