@@ -1,11 +1,15 @@
 OCAMLPATH = ..
 
-.PHONY: all
+.PHONY: all top
 all: byte opt
+
+top: geom.top
+	OCAMLPATH=../ rlwrap ./geom.top -init geominit
 
 byte: geom.cma
 opt: geom.cmxa
 
+CLIB = libft2.a
 LIBS = -cclib -lfreetype
 
 NAME = geom
@@ -32,10 +36,13 @@ libft2.a: $(C_SOURCES:.c=.o)
 	$(AR) rcs $@ $^
 
 $(ARCHIVE): $(ML_OBJS) libft2.a
-	$(OCAMLC)   -a -o $@ -package "$(REQUIRES)" -custom -linkpkg $(OCAMLFLAGS) $(ML_OBJS) -cclib -lft2 $(LIBS)
+	$(OCAMLC)   -package "$(REQUIRES)" -custom -linkpkg $(OCAMLFLAGS) $(ML_OBJS) $(CLIB) $(LIBS) -a -o $@
 
 $(XARCHIVE): $(ML_XOBJS) libft2.a
-	$(OCAMLOPT) -a -o $@ -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $(ML_XOBJS) -cclib -lft2 $(LIBS)
+	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $(ML_XOBJS) $(CLIB) $(LIBS) -a -o $@
+
+geom.top: $(ARCHIVE)
+	$(OCAMLMKTOP) -o $@ -package "findlib,$(REQUIRES)" -linkpkg $(ARCHIVE)
 
 install: all
 	if test -f $(XARCHIVE) ; then extra="$(XARCHIVE) "`basename $(XARCHIVE) .cmxa`.a ; fi ; \

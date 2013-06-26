@@ -11,11 +11,14 @@ REQUIRES = geom glop
 PROGRAMS = mlrocket.opt
 SOURCES = mlrocket.ml pic.ml rocket.ml world.ml game.ml main.ml
 
-all: $(PROGRAMS)
+all: libft2.a $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)
 
 # Common rules
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .opt .byte
+
+libft2.a:
+	ln -s ../libft2.a
 
 mlrocket.byte: $(SOURCES:.ml=.cmo)
 	$(OCAMLC) -o $@ -package "$(REQUIRES)" -linkpkg $(OCAMLFLAGS) $^

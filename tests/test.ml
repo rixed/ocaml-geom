@@ -1,5 +1,4 @@
 (* Test the shipped implementations. *)
-open Algen_intf
 module G = Glop_impl.Glop2D
 module View = Glop_view.Make(G)
 
@@ -97,7 +96,7 @@ let polys =
 		[| G.K.of_float (float_of_int (x - nb_polys/2) *. poly_size) ;
 		   G.K.of_float ((1.5 -. float_of_int y) *. poly_size) ;
 		   G.K.zero |] in
-	let rec list_mapi f l =
+	let list_mapi f l =
 		let n = ref 0 in
 		List.map (fun a -> let b = f !n a in incr n ; b) l in
 	list_mapi (fun n poly -> Algo.translate_poly poly (poly_pos n)) polys_list

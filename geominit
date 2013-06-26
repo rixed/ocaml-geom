@@ -1,0 +1,10 @@
+(* vim:syntax=ocaml
+ *)
+#require "algen";;
+
+module K = Algen_impl.FloatField
+module Vec = Algen_vector.Make (K) (Algen_impl.Dim2)
+module Point = Geom_shapes.Point (Vec)
+module Poly = Geom_shapes.Polygon (Point)
+module Path = Geom_path.Make (Point)
+module Algo = Geom_algo.Algorithms (Poly) (Path) 
