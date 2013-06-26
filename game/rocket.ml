@@ -7,7 +7,8 @@ type t =
       mutable prev_pos : Point.t ;
 	  mutable orient   : G.V.t ;
 	  mutable thrust   : K.t ;
-	  mutable speed    : G.V.t }
+	  mutable speed    : G.V.t ;
+      mutable viewable : View.viewable option }
 
 let make_shape () =
 	let (++) p1 p2 = Path.extend p1 p2 [] Path.make_straight_line in
@@ -30,16 +31,18 @@ let make =
           prev_pos = init_pos ;
           orient = G.V.make_unit 0 ;
           thrust = K.zero ;
-	  speed  = G.V.zero }
+    	  speed  = G.V.zero ;
+          viewable = None }
 
 let poly rocket = rocket.poly
 let pos rocket = rocket.pos
 let prev_pos rocket = rocket.prev_pos
 let orient rocket = rocket.orient
-let set_orient rocket orient =
-    mlog "New orient: %a, %a" K.print orient.(0) K.print orient.(1) ;
-    rocket.orient <- orient
+let speed rocket = rocket.speed
+let set_orient rocket orient = rocket.orient <- orient
 let set_thrust rocket thrust = rocket.thrust <- thrust
+let set_viewable rocket v = rocket.viewable <- Some v
+let viewable rocket = Bricabrac.unopt rocket.viewable
 
 let run gravity dt rocket =
 	let s = K.mul dt rocket.thrust in

@@ -10,6 +10,10 @@ let matrix_mult m (x, y, z) =
 
 let game_clic world camera = function
     | G.Clic (x, y, w, h) ->
+        (* we cannot easily use unproject here because we want the coordinate
+         * of the click on the base attached to the rocket but that does not
+         * rotate with it (same orientation than root). This viewable does not
+         * exist. *)
         let x = float_of_int (x - w/2) /. float_of_int (w/2)
         and y = float_of_int (y - h/2) /. float_of_int (h/2) in
         let y = -. y in
@@ -20,9 +24,6 @@ let game_clic world camera = function
         let clickpos = matrix_mult m (K.of_float x, K.of_float y, K.zero) in
         let pos = Rocket.pos rocket in
         let pos' = Point.sub clickpos pos in
-        (* FIXME:
-        let pos' = G.unproject (0,0,w,h) m x y in
-        mlog "clic(%d,%d) -> %f,%f" x y (K.to_float pos'.(0)) (K.to_float pos'.(1)) ; *)
         let n = Point.norm pos' in
         Rocket.set_orient rocket (Point.mul (K.inv n) pos') ;
         Rocket.set_thrust rocket (K.mul n (K.of_float 0.03))
@@ -103,14 +104,13 @@ let camera_of_world world =
 			Pic.Path world.World.ground, uni_gc [| K.one ; K.one ; K.one |] in
 		View.make_viewable "root" (fun () ->
             (* Profit from the start of painting to update world *)
-            (* FIXME: measure dt instead of using fps *)
             let dt = clock_dt () in
             World.run (K.of_float dt) world ;
-            Pic.draw ~prec:(K.of_float 0.5) (bg :: ground :: stars))
+            Pic.draw ~prec:World.prec (bg :: ground :: stars))
             View.identity in
 	List.iter
 		(fun rocket ->
-			ignore (View.make_viewable
+			Rocket.set_viewable rocket (View.make_viewable
 				~parent:root "a rocket"
 				(fun () ->
                     Pic.draw [ Pic.Poly (Rocket.poly rocket), uni_gc [| K.one ; K.one ; K.one |] ])

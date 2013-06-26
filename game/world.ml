@@ -4,7 +4,8 @@ type t =
 	{ ground : Path.t ;
 	  rockets : Rocket.t list ;
 	  gravity : K.t	;
-      radius : K.t }
+      radius : K.t ;
+      mutable max_speed : K.t }
 
 let randomize_path res path =
 	mlog "\t\tRandomizing ground..." ;
@@ -59,7 +60,28 @@ let make ~radius =
 	{ ground = make_ground ~radius ;
 	  rockets = [ Rocket.make (Point.mul (K.half radius) (Point.make_unit 0)) ] ;
 	  gravity ;
-      radius }
+      radius ;
+      max_speed = K.zero }
 
-let run dt world = List.iter (Rocket.run world.gravity dt) world.rockets
+let prec = K.of_float 0.5
+
+let run dt world =
+    List.iter (fun rocket ->
+        (* move rocket *)
+        Rocket.run world.gravity dt rocket ;
+        (* check collision with ground *)
+        if Poly.exists (fun p ->
+            let m = View.get_transform ~src:(Rocket.viewable rocket) () in
+            let p' = G.M.mul_vec m [| p.(0) ; p.(1) ; K.one ; K.one |] in
+            not (Algo.is_inside_path prec world.ground p')) (Rocket.poly rocket
+        ) then (
+            mlog "boum!" ;
+            mlog "Your max speed was %a" K.print (K.sqrt world.max_speed) ;
+            exit 0
+        ) else (
+            (* record max speed *)
+            let speed = G.V.norm2 (Rocket.speed rocket) in
+            if K.compare speed world.max_speed > 0 then world.max_speed <- speed
+        ))
+        world.rockets
 
