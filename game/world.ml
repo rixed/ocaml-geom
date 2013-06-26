@@ -1,12 +1,10 @@
 open Mlrocket
 
-(* Note : the space is incurved the other way around, so that the ground surrounds us. *)
-let radius = K.of_int 150
-
 type t =
 	{ ground : Path.t ;
 	  rockets : Rocket.t list ;
-	  gravity : K.t	}
+	  gravity : K.t	;
+      radius : K.t }
 
 let randomize_path res path =
 	mlog "\t\tRandomizing ground..." ;
@@ -17,21 +15,23 @@ let randomize_path res path =
 		let r = (K.to_float res) *. 1. in
 		let half_r = r /. 2. in
 		let rand () = K.of_float ((Random.float r) -. half_r) in
-		let rand_dec = Point.of_2scalars (rand (), rand ()) in
+		let rand_dec = [| rand () ; rand () |] in
 		match !path' with
 		| None ->
 			path' := Some (Path.empty p) ;
 			last_ctrl := rand_dec ;
 			last_p := p ;
 		| Some path'' ->
-			let rand_pt = Vec.right_turn (Vec.add rand_dec (Vec.sub p !last_p)) in
+            let right_turn v = [| v.(1) ; K.neg v.(0) |] in
+			let rand_pt = right_turn (G.V.add rand_dec (G.V.sub p !last_p)) in
 			path' := Some (Path.extend path'' p [Point.sub !last_p !last_ctrl ; Point.add p rand_pt] Path.make_bezier_curve) ;
 			last_ctrl := rand_pt ;
 			last_p := p in
-	Path.iter path res add_segment ;
-	Cnt.unopt !path'
+	Path.iter res path add_segment ;
+	Bricabrac.unopt !path'
 
-let make_ground () =
+(* Note : the space is incurved the other way around, so that the ground surrounds us. *)
+let make_ground ~radius =
 	mlog "\tBuilding ground..." ;
 	(* Start from a mere "sphere" *)
 	let up    = Point.make_unit 1 in
@@ -51,14 +51,15 @@ let make_ground () =
 	let ground = randomize_path (K.of_float 3.) grnd_1 in
 	ground
 	
-
-let make () =
+let make ~radius =
+    let radius = K.of_int radius in
 	mlog "Building world of radius %a..." K.print radius ;
 	let gravity = K.of_float 0.1 in
 	mlog "\tGravity = %a" K.print gravity ;
-	{ ground = make_ground () ;
-	  rockets = [ Rocket.make (Point.mul (Point.make_unit 0) (K.half radius)) ] ;
-	  gravity = gravity }
+	{ ground = make_ground ~radius ;
+	  rockets = [ Rocket.make (Point.mul (K.half radius) (Point.make_unit 0)) ] ;
+	  gravity ;
+      radius }
 
 let run dt world = List.iter (Rocket.run world.gravity dt) world.rockets
 

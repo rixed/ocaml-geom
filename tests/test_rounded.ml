@@ -22,7 +22,7 @@ let letters_view =
 	let box = Draw.box
 		[| G.K.of_float (-10.) ; G.K.of_float (-5.) |]
 		[| G.K.of_float 10. ; G.K.of_float 5. |]
-		(G.K.of_float 2.) in
+		(G.K.of_float 0.3) in
 	let ppolys = List.map (fun (radius, y) ->
 		let pos = [| G.K.zero ; G.K.of_float y |]
 		and radius = G.K.of_float radius in

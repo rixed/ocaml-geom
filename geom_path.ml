@@ -1,5 +1,3 @@
-open Algen_intf
-
 module Make (Point : Geom.POINT)
 	: Geom.PATH with module Point = Point =
 struct
@@ -68,7 +66,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 
 	let concat path1 path2 = { start = path1.start ; edges = path1.edges @ path2.edges }
 
-	let size path = List.length path.edges
+	let length path = List.length path.edges
 
 	let translate path disp =
 		let edge_translate (p, ctrls, i) =
@@ -85,7 +83,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	let center path =
 		(* FIXME: we should add the center of each edge instead of adding the starting point and every edge's last *)
 		let add_pos p (n, _, _) = Point.add p n in
-		Point.mul (Point.K.inv (Point.K.of_int (size path))) (List.fold_left add_pos path.start path.edges)
+		Point.mul (Point.K.inv (Point.K.of_int (length path))) (List.fold_left add_pos path.start path.edges)
 
 	(* FIXME: move this under ALGO, and use scale_point. Wait, then algo would know internal structure ? *)
 	let scale path center scale =
@@ -150,7 +148,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 			else List.nth ctrls (i-1)) in
 		bezier ctrls_arr res
 
-	let iter path res f =
+	let iter res path f =
 		let rec aux start edges =
 			f start ;
 			match edges with

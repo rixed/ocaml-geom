@@ -1,15 +1,15 @@
-OCAMLC   = OCAMLPATH=../.. ocamlfind ocamlc
-OCAMLOPT = OCAMLPATH=../.. ocamlfind ocamlopt
+OCAMLC   = OCAMLPATH=../.. ocamlfind ocamlc -thread
+OCAMLOPT = OCAMLPATH=../.. ocamlfind ocamlopt -thread
 OCAMLDEP = OCAMLPATH=../.. ocamlfind ocamldep
-OCAMLOPTFLAGS = -w Ael -g -S
-OCAMLFLAGS    = -w Ael -g
+OCAMLOPTFLAGS = -w Ael -g -annot -S
+OCAMLFLAGS    = -w Ael -g -annot
 
-REQUIRES = geom
+REQUIRES = geom glop
 
 .PHONY: all clean
 
-PROGRAMS = mlrocket.byte
-SOURCES = mlrocket.ml rocket.ml world.ml game.ml main.ml
+PROGRAMS = mlrocket.opt
+SOURCES = mlrocket.ml pic.ml rocket.ml world.ml game.ml main.ml
 
 all: $(PROGRAMS)
 opt: $(PROGRAMS:.byte=.opt)

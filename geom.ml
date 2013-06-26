@@ -98,7 +98,8 @@ sig
 	val concat : t -> t -> t
 
 	(** Returns the number of points in a path. *)
-	val size : t -> int
+	val length : t -> int
+    (* FIXME: include Pfds_intf.ITERABLE *)
 
 	(* These belongs to ALGO (rename to path_translate, etc) *)
 	(** Translates a path. *)
@@ -116,7 +117,7 @@ sig
 	(** Scale a path along a given axis. *)
 	val scale_along : point (*center*) -> point (*axis*) -> Point.K.t -> t -> t
 	
-	val iter : t -> Point.K.t -> (point -> unit) -> unit
+	val iter : Point.K.t -> t -> (point -> unit) -> unit
 	val iter_edges : t -> (point -> point -> unit) -> unit
 
 	val bbox : t -> Point.Bbox.t

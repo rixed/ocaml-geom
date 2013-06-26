@@ -3,43 +3,52 @@ open Mlrocket
 type t =
 	{ name  : string ;
 	  poly  : Poly.t ;
-	  mutable pos    : Point.t ;
-	  mutable orient : float * float ;
-	  mutable thrust : float ;
-	  mutable speed  : Vec.t }
+	  mutable pos      : Point.t ;
+      mutable prev_pos : Point.t ;
+	  mutable orient   : G.V.t ;
+	  mutable thrust   : K.t ;
+	  mutable speed    : G.V.t }
 
 let make_shape () =
 	let (++) p1 p2 = Path.extend p1 p2 [] Path.make_straight_line in
-	let width = K.half K.one in
+	let width = Point.K.half Point.K.one in
 	let triangle_path = 
 		(Path.empty (Point.make_unit 0)) ++
-		(Point.of_2scalars (K.neg K.one, width)) ++
-		(Point.of_2scalars (K.neg K.one, K.neg width)) in
-	Algo.poly_of_path triangle_path K.one
+		[| Point.K.neg Point.K.one ; width |] ++
+		[| Point.K.neg Point.K.one ; Point.K.neg width |] in
+	Algo.poly_of_path triangle_path Point.K.one
 
-let make init_pos =
-	mlog "\tBuilding rocket..." ;
-	{ name   = "TheRocket!" ;
-	  poly   = make_shape () ;
-	  pos    = init_pos ;
-	  orient = 1., 0. ;
-	  thrust = 0. ;
-	  speed  = Vec.zero }
+let make =
+    let nb_rockets = ref 0 in
+    fun init_pos ->
+        incr nb_rockets ;
+        mlog "\tBuilding rocket %d..." !nb_rockets ;
+        { name = "TheRocket!"^
+                     (if !nb_rockets > 1 then " ("^ string_of_int !nb_rockets ^")" else "");
+          poly = make_shape () ;
+          pos = init_pos ;
+          prev_pos = init_pos ;
+          orient = G.V.make_unit 0 ;
+          thrust = K.zero ;
+	  speed  = G.V.zero }
 
 let poly rocket = rocket.poly
 let pos rocket = rocket.pos
-let orient rocket () = rocket.orient
-let set_orient rocket orient = rocket.orient <- orient
+let prev_pos rocket = rocket.prev_pos
+let orient rocket = rocket.orient
+let set_orient rocket orient =
+    mlog "New orient: %a, %a" K.print orient.(0) K.print orient.(1) ;
+    rocket.orient <- orient
 let set_thrust rocket thrust = rocket.thrust <- thrust
 
 let run gravity dt rocket =
-	let dir_x = K.of_float (fst rocket.orient)
-	and dir_y = K.of_float (snd rocket.orient) in
-	let s = rocket.thrust *. dt in
-	let thrust = Vec.mul (Vec.of_2scalars (dir_x, dir_y)) (K.of_float s) in
-	let gravity' = K.mul gravity (K.of_float dt) in
-	let g = Vec.mul (Vec.normalize rocket.pos) gravity' in
-	rocket.speed <- Vec.add rocket.speed (Vec.add thrust g) ;
-	rocket.pos   <- Vec.add rocket.pos rocket.speed ;
+	let s = K.mul dt rocket.thrust in
+	let thrust = G.V.mul s rocket.orient in
+	let gravity' = Point.K.mul gravity dt in
+	let g = G.V.mul gravity' (G.V.normalize rocket.pos) in
+    rocket.prev_pos <- rocket.pos ;
+	rocket.speed <- G.V.add rocket.speed (G.V.add thrust g) ;
+	rocket.pos   <- G.V.add rocket.pos rocket.speed ;
 	(* loose 9/10th of your thrust every second *)
-	rocket.thrust <- rocket.thrust *. (0.1**dt)
+    let r = 0.1 ** K.to_float dt in
+	rocket.thrust <- K.mul (K.of_float r) rocket.thrust

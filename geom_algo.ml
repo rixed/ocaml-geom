@@ -228,7 +228,7 @@ struct
 		split_aux (simplify polys) ;
 		!res
 	
-	let rec iter_diagonals poly f =
+	let iter_diagonals poly f =
 		Poly.iter_pairs (fun p0 p1 -> if not (are_neighbour p0 p1) then f p0 p1) poly
 
 	let iter_splitable_diagonals poly f =
@@ -296,7 +296,7 @@ struct
 	
 	let poly_of_path path res =
 		let poly = ref Poly.empty in
-		Path.iter path res (fun pt ->
+		Path.iter res path (fun pt ->
 			if
 				(Poly.is_empty !poly) ||
 				not (

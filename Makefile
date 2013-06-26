@@ -1,6 +1,9 @@
 OCAMLPATH = ..
 
-all: geom.cma
+.PHONY: all
+all: byte opt
+
+byte: geom.cma
 opt: geom.cmxa
 
 LIBS = -cclib -lfreetype
@@ -18,8 +21,8 @@ LDLIBS += $(shell freetype-config --libs)
 
 REQUIRES = bricabrac pfds algen
 
-OCAMLOPTFLAGS = -rectypes
-OCAMLFLAGS = -rectypes
+OCAMLOPTFLAGS =
+OCAMLFLAGS =
 include make.common
 
 ARCHIVE = $(NAME).cma

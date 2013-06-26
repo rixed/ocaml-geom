@@ -12,4 +12,5 @@ gmon.out
 *.a
 *.byte
 *.opt
+*.annot
 _build

@@ -53,30 +53,14 @@ module Polygon
 	: Geom.POLYGON with module Point = Point =
 struct
 	module Point = Point
-	module Ring  = Ring_impl.Ring
 	type e = Point.t
-	type t = Point.t Ring.t
-	
-	let empty = Ring.empty
-	let is_empty = Ring.is_empty
-	let singleton = Ring.singleton
-	let length = Ring.length
-	let iter = Ring.iter
-	let iterr = Ring.iterr
-	let iteri = Ring.iteri
-	let iterir = Ring.iterir
-	let fold_left = Ring.fold_left
-	let fold_leftr = Ring.fold_leftr
-	let fold_right = Ring.fold_right
-	let fold_rightr = Ring.fold_rightr
- 
-	let get = Ring.get
-	let next = Ring.next
-	let prev = Ring.prev
-	let insert_before = Ring.insert_before
-	let insert_after = Ring.insert_after
-	let remove = Ring.remove
 
+	module Ring = Ring_impl.Ring
+    type 'a ring = 'a Ring.t
+    include (Ring : Pfds_intf.RING_GEN with type 'a t := 'a ring)
+
+	type t = Point.t ring
+	
 	let iter_pairs f t =
 		let rec aux t1 f n =
 			if n > 0 then (

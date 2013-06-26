@@ -1,12 +1,11 @@
 open Mlrocket
 
-val radius : K.t
-
 type t = 
 	{ ground : Path.t ;
 	  rockets : Rocket.t list ;
-	  gravity : K.t	}
+	  gravity : K.t	;
+      radius  : K.t }
 
-val make : unit -> t
+val make : radius:int -> t
 (* Run the world for this fraction of a second *)
-val run  : float -> t -> unit
+val run  : K.t -> t -> unit
