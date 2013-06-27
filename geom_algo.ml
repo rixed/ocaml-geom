@@ -141,11 +141,11 @@ struct
     let is_inside_poly poly point =
         is_inside (Poly.iter_edges poly) point
 
-    let is_inside_path prec path point =
+    let is_inside_path res path point =
         let prev_point = ref None
         and first_point = ref None in
         let iter f = 
-            Path.iter prec path (fun p ->
+            Path.iter res path (fun p ->
                 (match !prev_point with
                 | None -> first_point := Some p
                 | Some pp -> f pp p) ;

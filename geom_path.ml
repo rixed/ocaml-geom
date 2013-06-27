@@ -3,26 +3,6 @@ module Make (Point : Geom.POINT)
 struct
 	module Point = Point
 	type point = Point.t
-(*
-let vector_add (ax, ay) (bx, by) = (ax+.bx, ay+.by)
-let vector_mul s (ax, ay) = (ax*.s, ay*.s)
-let vector_div (ax, ay) d = (ax/.d, ay/.d)
-let vector_rotate (cx, cy) angle (px, py) =
-	let c = cos angle in
-	let s = sin angle in
-	let x = px -. cx in
-	let y = py -. cy in
-	(x*.c -. y*.s +. cx, x*.s +. y*.c +. cy)
-let vector_sub (x1, y1) (x2, y2) = (x2-.x1, y2-.y1)
-let vector_zero = (0., 0.)
-
-
-(* Displace point p by vector v *)
-let point_disp v p = vector_add p v
-(* Distance from a to b *)
-let point_dist a b = vector_sub b a
-let point_scale center scale p = vector_add center (vector_mul scale (vector_sub p center))
-*)
 	type interpolator = point -> point -> point list -> Point.K.t -> point list
 
 	type t = {
@@ -46,7 +26,7 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 	 * Path manipulation
 	 *)
 
-	let empty start = { start = start ; edges = [] }
+	let empty start = { start ; edges = [] }
 
 	let is_empty path = path.edges = []
 
@@ -85,7 +65,6 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		let add_pos p (n, _, _) = Point.add p n in
 		Point.mul (Point.K.inv (Point.K.of_int (length path))) (List.fold_left add_pos path.start path.edges)
 
-	(* FIXME: move this under ALGO, and use scale_point. Wait, then algo would know internal structure ? *)
 	let scale path center scale =
 		let scale_me p = Point.add center (Point.mul scale (Point.sub p center)) in
 		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
@@ -104,6 +83,27 @@ let point_scale center scale p = vector_add center (vector_mul scale (vector_sub
 		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
 		{ start = scale_me path.start ; edges = List.map edge_scale path.edges }
 		
+    let clip p0 p1 path =
+        let is_left p = Point.compare_left p0 p1 p >= 0 in
+        let rec aux res start start_is_left = function
+            | [] -> res
+            | (stop, ctrls, interp) :: edges ->
+                let stop_is_left = is_left stop in
+                let res =
+                    if start_is_left then
+                        (* add this point to previous path *)
+                        match res with
+                        | [] -> [ extend (empty start) stop ctrls interp ]
+                        | p::res' -> extend p stop ctrls interp :: res'
+                    else if stop_is_left || List.exists is_left ctrls then
+                        (* start a new path *)
+                        extend (empty start) stop ctrls interp :: res
+                    else res in
+                aux res stop stop_is_left edges in
+        let start_is_left = is_left path.start in
+        let res = if start_is_left then [ empty path.start ] else [] in
+        aux res path.start start_is_left path.edges
+        
 	(*
 	 * Interpolators
 	 *)

@@ -117,8 +117,13 @@ sig
 
 	(** Scale a path along a given axis. *)
 	val scale_along : point (*center*) -> point (*axis*) -> Point.K.t -> t -> t
-	
+
+    (** Return only that part of the path thats at left of the given line *)
+    val clip : point -> point -> t -> t list
+
+    (** Iter over points with no points farther apart than given distance (except for straight lines) *)
 	val iter : Point.K.t -> t -> (point -> unit) -> unit
+
 	val iter_edges : t -> (point -> point -> unit) -> unit
 
 	val bbox : t -> Point.Bbox.t
