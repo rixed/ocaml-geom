@@ -40,8 +40,6 @@ sig
 	(* TODO *)
 end
 
-exception Bad_geometry
-
 (** A POLYGON is essentialy a Point Ring, but may have some other properties as well. *)
 module type POLYGON =
 sig
@@ -61,6 +59,7 @@ sig
 
 	val iter_pairs    : (t -> t -> unit) -> t -> unit
 	val iter_edges    : t -> (Point.t -> Point.t -> unit) -> unit
+    val is_inside     : t -> Point.t -> bool
 	val print         : Format.formatter -> t -> unit
 end
 
@@ -126,6 +125,8 @@ sig
 
 	val iter_edges : t -> (point -> point -> unit) -> unit
 
+    val is_inside : Point.K.t -> t -> Point.t -> bool
+
 	val bbox : t -> Point.Bbox.t
 
 	val area_min : t -> Point.K.t
@@ -148,8 +149,6 @@ sig
 	val in_cone : Poly.t -> Poly.Point.t -> bool
 	val is_diagonal : Poly.t -> Poly.t -> bool
 	val can_split : Poly.t -> Poly.t -> bool
-    val is_inside_poly : Poly.t -> Poly.Point.t -> bool
-    val is_inside_path : Path.Point.K.t -> Path.t -> Path.Point.t -> bool
 	val iter_diagonals : Poly.t -> (Poly.t -> Poly.t -> unit) -> unit
 	val iter_splitable_diagonals : Poly.t -> (Poly.t -> Poly.t -> unit) -> unit
 
@@ -201,3 +200,21 @@ sig
 	val convex_hull : PXYL.t -> Poly.t
 end
 
+(* Various useful stuff *)
+
+exception Bad_geometry
+
+module MakeIsInside (K : FIELD) =
+struct
+    let is_inside iter point =
+        let nb_intersect = ref 0 in
+        iter (fun p0 p1 ->
+            if (K.compare p1.(1) point.(1) > 0 && K.compare p0.(1) point.(1) <= 0) ||
+               (K.compare p0.(1) point.(1) > 0 && K.compare p1.(1) point.(1) <= 0) then (
+                (* compute location of intersection *)
+                let ( * ) = K.mul and ( - ) = K.sub and ( + ) = K.add and ( / ) = K.div in
+                let x = p0.(0) + ((p0.(1) - point.(1)) * (p1.(0) - p0.(0))) / (p0.(1) - p1.(1)) in
+                if K.compare x point.(0) > 0 then incr nb_intersect
+            )) ;
+        !nb_intersect land 1 = 1
+end

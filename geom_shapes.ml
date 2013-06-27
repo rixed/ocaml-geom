@@ -88,5 +88,9 @@ struct
 			poly ;
 		Format.pp_print_string ff "}" ;
 		Format.pp_close_box ff ();
+
+    module IsInside = Geom.MakeIsInside (Point.K)
+    let is_inside poly point =
+        IsInside.is_inside (iter_edges poly) point
 end
 

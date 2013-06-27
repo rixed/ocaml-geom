@@ -126,36 +126,6 @@ struct
 		let new_pol = (Poly.insert_after (Poly.insert_after (Poly.empty) final_point) first_point) in
 		move_point (Poly.next pol0) new_pol
 
-    let is_inside iter point =
-        let nb_intersect = ref 0 in
-        iter (fun p0 p1 ->
-            if (K.compare p1.(1) point.(1) > 0 && K.compare p0.(1) point.(1) <= 0) ||
-               (K.compare p0.(1) point.(1) > 0 && K.compare p1.(1) point.(1) <= 0) then (
-                (* compute location of intersection *)
-                let ( * ) = K.mul and ( - ) = K.sub and ( + ) = K.add and ( / ) = K.div in
-                let x = p0.(0) + ((p0.(1) - point.(1)) * (p1.(0) - p0.(0))) / (p0.(1) - p1.(1)) in
-                if K.compare x point.(0) > 0 then incr nb_intersect
-            )) ;
-        !nb_intersect land 1 = 1
-
-    let is_inside_poly poly point =
-        is_inside (Poly.iter_edges poly) point
-
-    let is_inside_path res path point =
-        let prev_point = ref None
-        and first_point = ref None in
-        let iter f = 
-            Path.iter res path (fun p ->
-                (match !prev_point with
-                | None -> first_point := Some p
-                | Some pp -> f pp p) ;
-                prev_point := Some p) ;
-            match !first_point with
-            | None -> ()
-            | Some fp ->
-                let pp = Bricabrac.unopt !prev_point in
-                if pp != fp then f pp fp in
-        is_inside iter point
 (*
 	let focus_on poly p =
 		(* Return the same poly, focused on p *)

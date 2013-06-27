@@ -44,7 +44,7 @@ let () =
             let m = View.get_transform ~src:box_view ~dst:camera () in
             let m = G.M.mul_mat (G.get_projection ()) m in
             let p = G.unproject (0,0,w,h) m x (h-y) in
-            let ins = Algo.is_inside_poly box p in
+            let ins = Poly.is_inside box p in
             Format.printf "%a %a -> %s@." G.K.print p.(0) G.K.print p.(1) (if ins then "inside" else "outside")
         | _ -> () in
     View.display ~on_event [ fun () -> View.draw_viewable camera ]
