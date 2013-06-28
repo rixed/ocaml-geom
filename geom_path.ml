@@ -39,7 +39,7 @@ struct
 		Point.eq first last
 
 	let extend path next ctrls interp = (match path.edges with
-		| (pt, _, _) :: _ -> if 0 = Point.compare pt next then
+		| (pt, [], _) :: _ -> if 0 = Point.compare pt next then
 			Format.printf "Path edge of no length at point %a@\n" Point.print pt
 		| _ -> ()) ;
 		{ path with edges = path.edges @ [next, ctrls, interp] }
