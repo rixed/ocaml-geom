@@ -60,6 +60,7 @@ sig
 	val iter_pairs    : (t -> t -> unit) -> t -> unit
 	val iter_edges    : t -> (Point.t -> Point.t -> unit) -> unit
     val is_inside     : t -> Point.t -> bool
+    val translate     : t -> Point.t (* should be vector *) -> t
 	val print         : Format.formatter -> t -> unit
 end
 
@@ -124,6 +125,8 @@ sig
 	val iter : Point.K.t -> t -> (point -> unit) -> unit
 
 	val iter_edges : t -> (point -> point -> unit) -> unit
+
+    val map_pts : (point -> point list -> point * point list) -> t -> t
 
     val is_inside : Point.K.t -> t -> Point.t -> bool
 

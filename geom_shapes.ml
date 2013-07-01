@@ -77,20 +77,23 @@ struct
             let p0 = get t and p1 = get (next t) in
             f p0 p1) t
 
-	let print ff poly =
-		let focus = get poly in
+	let print ff t =
+		let focus = get t in
 		Format.pp_open_box ff 0 ;
 		Format.pp_print_string ff "{" ; Format.pp_print_space ff () ;
 		iter
 			(fun point ->
 				if point == focus then Format.pp_print_string ff "*" ;
 				Point.print ff point ; Format.pp_print_space ff ())
-			poly ;
+			t ;
 		Format.pp_print_string ff "}" ;
-		Format.pp_close_box ff ();
+		Format.pp_close_box ff ()
+
+    let translate t v =
+        map (fun p -> Point.add p v) t
 
     module IsInside = Geom.MakeIsInside (Point.K)
-    let is_inside poly point =
-        IsInside.is_inside (iter_edges poly) point
+    let is_inside t point =
+        IsInside.is_inside (iter_edges t) point
 end
 

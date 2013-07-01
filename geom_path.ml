@@ -165,6 +165,13 @@ struct
 			| (stop, _, _) :: e' -> f prec stop ; aux stop e'
 		in
 		if not (is_empty path) then aux path.start path.edges
+
+    let map_pts f path =
+        let edges =
+            List.map (fun (stop, ctrls, interp) ->
+                let stop', ctrls' = f stop ctrls in
+                stop', ctrls', interp) path.edges in
+        { path with edges }
 	
 	let area_min path =
 		let s = ref Point.K.zero in
