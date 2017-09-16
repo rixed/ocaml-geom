@@ -42,7 +42,7 @@ geom.top: $(ARCHIVE)
 	$(OCAMLMKTOP) -o $@ -package "findlib,$(REQUIRES)" -linkpkg $(ARCHIVE)
 
 install: all
-	if test -f $(XARCHIVE) ; then extra="$(XARCHIVE) "`basename $(XARCHIVE) .cmxa`.a ; fi ; \
+	if test -f $(XARCHIVE) ; then extra="$(XARCHIVE) *.cmx "`basename $(XARCHIVE) .cmxa`.a ; fi ; \
 	ocamlfind install $(NAME) *.cmi $(ARCHIVE) META freetype.mli libft2.a geom.ml cnt.ml $$extra
 
 uninstall:
