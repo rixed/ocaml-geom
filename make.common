@@ -31,7 +31,7 @@ ML_XOBJS = $(ML_SOURCES:.ml=.cmx)
 # Clean up
 .PHONY: clean clean-spec
 clean: clean-spec
-	rm -f *.cm[ioxa] *.cmxa *.a *.s *.o *.byte *.opt .depend
+	rm -f *.cm[ioxa] *.cmxa *.a *.s *.o *.byte *.opt .depend *.annot
 
 # Dependencies
 .depend: $(ML_SOURCES) $(C_SOURCES)

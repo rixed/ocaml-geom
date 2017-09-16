@@ -20,7 +20,7 @@ C_SOURCES = ftintf.c
 CPPFLAGS += $(shell freetype-config --cflags)
 LDLIBS += $(shell freetype-config --libs)
 
-REQUIRES = bricabrac pfds algen
+REQUIRES = pfds algen
 
 OCAMLOPTFLAGS =
 OCAMLFLAGS =
