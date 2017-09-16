@@ -40,7 +40,8 @@ sig
   (* TODO *)
 end
 
-(** A POLYGON is essentialy a Point Ring, but may have some other properties as well. *)
+(** A POLYGON is essentially a Point Ring, but may have some other properties
+ * as well. *)
 module type POLYGON =
 sig
   module Point : POINT
@@ -59,14 +60,16 @@ sig
 
   val iter_pairs    : (t -> t -> unit) -> t -> unit
   val iter_edges    : t -> (Point.t -> Point.t -> unit) -> unit
-    val is_inside     : t -> Point.t -> bool
-    val translate     : t -> Point.t (* should be vector *) -> t
+  val is_inside     : t -> Point.t -> bool
+  val translate     : t -> Point.t (* should be vector *) -> t
   val print         : Format.formatter -> t -> unit
 end
 
-(** A Path is basically a point list. We consider it "closed" when the last point is at the same
- * location (Point.eq) that the first one (which is trivially true when there is one one point,
- * and false when the path is empty). *)
+(** A Path is basically a point list with interpolators in between
+ * (an interpolator being a function to build intermediary points).
+ * We consider it "closed" when the last point is at the same
+ * location (Point.eq) that the first one (which is trivially true when
+ * there is only one point, and false when the path is empty). *)
 module type PATH =
 sig
   type t
@@ -75,11 +78,13 @@ sig
 
   type point = Point.t
 
-  (** Function that, given a starting point, a stopping point, a control points list
-      and a resolution, will return a list of intermediary points going from the
-      starting point to the destination at the given resolution. *)
+  (** Function that, given a starting point, a stopping point, a control
+   * points list and a resolution, will return a list of intermediary
+   * points going from the starting point to the destination at the given
+   * resolution. *)
+  type interpolator =
+    point -> point -> point list -> Point.K.t -> point list
 
-  type interpolator = point -> point -> point list -> Point.K.t -> point list
   val make_straight_line : interpolator
   val make_bezier_curve : interpolator
 
@@ -95,18 +100,24 @@ sig
   (** Extend a path *)
   val extend : t -> point (* next one *) -> point list (* control pts *) -> interpolator -> t
 
-  (** Build a path composed of the first one followed by the second one. *)
+  (** Build a path composed of the first one followed by the second one.
+   * They are joint in such a way that the last point of the first path
+   * becomes (and replaces) the starting point of the second one (without
+   * translating the second path from the difference between the new and
+   * old starting points). *)
   val concat : t -> t -> t
 
-  (** Returns the number of points in a path. *)
+  (** Returns the number of points in a path (beside the starting point). *)
   val length : t -> int
-    (* FIXME: include Pfds_intf.ITERABLE *)
+  (* FIXME: include Pfds_intf.ITERABLE *)
 
   (* These belongs to ALGO (rename to path_translate, etc) *)
   (** Translates a path. *)
   (* FIXME: Point here should be Vector *)
   val translate : t -> point -> t
 
+  (** Inverse a path so that its last point become its new starting point
+   * and the other way around. *)
   val inverse : t -> t
 
   (** Return the center position of a path. *)
@@ -118,18 +129,25 @@ sig
   (** Scale a path along a given axis. *)
   val scale_along : point (*center*) -> point (*axis*) -> Point.K.t -> t -> t
 
-    (** Return only that part of the path thats at left of the given line *)
-    val clip : point -> point -> t -> t list
+  (** Returns only that part of the path that is on the left of the given
+   * line. This can of course return 0, 1 or more paths. *)
+  val clip : point -> point -> t -> t list
 
-    (** Iter over points with no points farther apart than given distance (except for straight lines) *)
+  (** Iter over points with no points farther apart than given distance
+   * (except for straight lines) *)
   val iter : Point.K.t -> t -> (point -> unit) -> unit
 
   val iter_edges : t -> (point -> point -> unit) -> unit
 
-    val map_pts : (point -> point list -> point * point list) -> t -> t
+  val map_pts : (point -> point list -> point * point list) -> t -> t
 
-    val is_inside : Point.K.t -> t -> Point.t -> bool
+  (* Tells if the point is inside the given path. The additional K.t that's
+   * passed control the precision of the interpolators. If the path is not
+   * closed then the result is undefined. *)
+  val is_inside : Point.K.t -> t -> Point.t -> bool
 
+  (* Returns the bbox englobing all control points (so an overestimation
+   * that's independent of the interpolators *)
   val bbox : t -> Point.Bbox.t
 
   val area_min : t -> Point.K.t
@@ -159,7 +177,7 @@ sig
   val convex_partition : Poly.t list -> Poly.t list
   val triangulate : Poly.t list -> Poly.t list
   val triangulate_slow : Poly.t list -> Poly.t list
-    val intersect_polys : Poly.Point.t -> Poly.Point.t -> Poly.t list -> bool
+  val intersect_polys : Poly.Point.t -> Poly.Point.t -> Poly.t list -> bool
   val monotonize : Poly.t list -> Poly.t list
   val inverse_polys : Poly.t list -> Poly.t list
   val inverse_single : Poly.t -> Poly.t
@@ -179,7 +197,7 @@ sig
 
   (* Rasterization *)
   val rasterize : Poly.t list ->
-    (int (* x_start *) -> int (* x_stop *) -> int (* y *) -> Poly.Point.K.t (* alpha *) -> unit) ->
+   (int (* x_start *) -> int (* x_stop *) -> int (* y *) -> Poly.Point.K.t (* alpha *) -> unit) ->
     unit
   (* [iter_rasters polys fun] will call [fun x y alpha] for every pixel of the polygon *)
 
@@ -212,15 +230,15 @@ exception Bad_geometry
 
 module MakeIsInside (K : FIELD) =
 struct
-    let is_inside iter point =
-        let nb_intersect = ref 0 in
-        iter (fun p0 p1 ->
-            if (K.compare p1.(1) point.(1) > 0 && K.compare p0.(1) point.(1) <= 0) ||
-               (K.compare p0.(1) point.(1) > 0 && K.compare p1.(1) point.(1) <= 0) then (
-                (* compute location of intersection *)
-                let ( * ) = K.mul and ( - ) = K.sub and ( + ) = K.add and ( / ) = K.div in
-                let x = p0.(0) + ((p0.(1) - point.(1)) * (p1.(0) - p0.(0))) / (p0.(1) - p1.(1)) in
-                if K.compare x point.(0) > 0 then incr nb_intersect
-            )) ;
-        !nb_intersect land 1 = 1
+  let is_inside iter point =
+    let nb_intersect = ref 0 in
+    iter (fun p0 p1 ->
+      if (K.compare p1.(1) point.(1) > 0 && K.compare p0.(1) point.(1) <= 0) ||
+         (K.compare p0.(1) point.(1) > 0 && K.compare p1.(1) point.(1) <= 0) then (
+          (* compute location of intersection *)
+          let ( * ) = K.mul and ( - ) = K.sub and ( + ) = K.add and ( / ) = K.div in
+          let x = p0.(0) + ((p0.(1) - point.(1)) * (p1.(0) - p0.(0))) / (p0.(1) - p1.(1)) in
+          if K.compare x point.(0) > 0 then incr nb_intersect
+      )) ;
+    !nb_intersect land 1 = 1
 end

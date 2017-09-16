@@ -11,4 +11,3 @@ sig
   val find_before : Elmt.t tree -> Elmt.t -> Elmt.t
   val iter : Elmt.t tree -> (Elmt.t -> unit) -> unit
 end
-

@@ -44,7 +44,8 @@ struct
 		| _ -> ()) ;
 		{ path with edges = path.edges @ [next, ctrls, interp] }
 
-	let concat path1 path2 = { start = path1.start ; edges = path1.edges @ path2.edges }
+	let concat path1 path2 =
+    { start = path1.start ; edges = path1.edges @ path2.edges }
 
 	let length path = List.length path.edges
 
@@ -83,27 +84,27 @@ struct
 		let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
 		{ start = scale_me path.start ; edges = List.map edge_scale path.edges }
 		
-    let clip p0 p1 path =
-        let is_left p = Point.compare_left p0 p1 p >= 0 in
-        let rec aux res start start_is_left = function
-            | [] -> res
-            | (stop, ctrls, interp) :: edges ->
-                let stop_is_left = is_left stop in
-                let res =
-                    if start_is_left then
-                        (* add this point to previous path *)
-                        match res with
-                        | [] -> [ extend (empty start) stop ctrls interp ]
-                        | p::res' -> extend p stop ctrls interp :: res'
-                    else if stop_is_left || List.exists is_left ctrls then
-                        (* start a new path *)
-                        extend (empty start) stop ctrls interp :: res
-                    else res in
-                aux res stop stop_is_left edges in
-        let start_is_left = is_left path.start in
-        let res = if start_is_left then [ empty path.start ] else [] in
-        aux res path.start start_is_left path.edges
-        
+  let clip p0 p1 path =
+    let is_left p = Point.compare_left p0 p1 p >= 0 in
+    let rec aux res start start_is_left = function
+      | [] -> res
+      | (stop, ctrls, interp) :: edges ->
+        let stop_is_left = is_left stop in
+        let res =
+          if start_is_left then
+            (* add this point to previous path *)
+            match res with
+            | [] -> [ extend (empty start) stop ctrls interp ]
+            | p::res' -> extend p stop ctrls interp :: res'
+          else if stop_is_left || List.exists is_left ctrls then
+            (* start a new path *)
+            extend (empty start) stop ctrls interp :: res
+          else res in
+        aux res stop stop_is_left edges in
+    let start_is_left = is_left path.start in
+    let res = if start_is_left then [ empty path.start ] else [] in
+    aux res path.start start_is_left path.edges
+
 	(*
 	 * Interpolators
 	 *)
@@ -181,33 +182,33 @@ struct
 
     module IsInside = Geom.MakeIsInside (Point.K)
     let is_inside res path point =
-        let rec aux start edges f =
-            match edges with
-            | [] ->
-                if start != path.start then f start path.start
-            | (stop, [], _interp) :: edges' ->
-                f start stop ;
-                aux stop edges' f
-            | (stop, ctrls, interp) :: edges' ->
-                let bbox = Point.Bbox.make start in
-                let bbox = Point.Bbox.add bbox stop in
-                let bbox = List.fold_left Point.Bbox.add bbox ctrls in
-                (match bbox with
-                | Point.Bbox.Box ([| _xmi;ymi |], [| xma;yma |]) ->
-                    if Point.K.compare point.(0) xma <= 0 &&
-                       Point.K.compare point.(1) yma <= 0 &&
-                       Point.K.compare point.(1) ymi >= 0 then (
-                        (* iter on this edge *)
-				        let last = List.fold_left (fun prev next ->
-                            f prev next ;
-                            next)
-                            start
-                            (interp start stop ctrls res) in
-                        f last stop
-                    )
-                | _ -> assert false) ;
-                aux stop edges' f in
-        IsInside.is_inside (aux path.start path.edges) point
+      let rec aux start edges f =
+        match edges with
+        | [] ->
+          if start != path.start then f start path.start
+        | (stop, [], _interp) :: edges' ->
+          f start stop ;
+          aux stop edges' f
+        | (stop, ctrls, interp) :: edges' ->
+          let bbox = Point.Bbox.make start in
+          let bbox = Point.Bbox.add bbox stop in
+          let bbox = List.fold_left Point.Bbox.add bbox ctrls in
+          (match bbox with
+          | Point.Bbox.Box ([| _xmi;ymi |], [| xma;yma |]) ->
+            if Point.K.compare point.(0) xma <= 0 &&
+               Point.K.compare point.(1) yma <= 0 &&
+               Point.K.compare point.(1) ymi >= 0
+            then ( (* iter on this edge *)
+              let last =
+                List.fold_left (fun prev next ->
+                    f prev next ;
+                    next
+                  ) start (interp start stop ctrls res) in
+                f last stop
+                )
+          | _ -> assert false) ;
+          aux stop edges' f in
+      IsInside.is_inside (aux path.start path.edges) point
 
 	let bbox path =
 		let union_ctls bbox ctl = Point.Bbox.add bbox ctl in
