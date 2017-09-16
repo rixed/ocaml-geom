@@ -1,8 +1,8 @@
 # vim:syntax=make
-OCAMLC     = ocamlfind ocamlc -thread
-OCAMLOPT   = ocamlfind ocamlopt -thread -g
+OCAMLC     = ocamlfind ocamlc
+OCAMLOPT   = ocamlfind ocamlopt -g
 OCAMLDEP   = ocamlfind ocamldep
-OCAMLMKTOP = ocamlfind ocamlmktop -thread -g
+OCAMLMKTOP = ocamlfind ocamlmktop -g
 INCS       =
 OCAMLOPTFLAGS += $(INCS) -w Ae -g -annot
 OCAMLFLAGS    += $(INCS) -w Ae -g -annot
