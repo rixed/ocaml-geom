@@ -140,11 +140,11 @@ struct
 
   let to_paths glyph = glyph.paths
 
-  let to_polys glyph prec =
-    let key = glyph.index, prec in
+  let to_polys ~res glyph =
+    let key = glyph.index, res in
     try get_cached key
     with Not_found ->
-      let polys = Algo.polys_of_paths prec glyph.paths in
+      let polys = Algo.polys_of_paths ~res glyph.paths in
       add_cache key polys ;
       polys
   
@@ -209,8 +209,8 @@ struct
         aux new_bbox others in
     aux Glyph.Poly.Point.Bbox.empty word
 
-  let to_polys word prec =
-    List.map (fun (p, g) -> p, Glyph.to_polys g prec) word
+  let to_polys ~res word =
+    List.map (fun (p, g) -> p, Glyph.to_polys ~res g) word
   
   let to_paths word =
     List.map (fun (p, g) -> p, Glyph.to_paths g) word

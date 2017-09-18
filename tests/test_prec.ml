@@ -23,13 +23,13 @@ let o = Glyph.make 'O'
 let bbox_diag = Point.Bbox.diagonal (Glyph.bbox o)
 
 let () =
-	let rec build_ppolys ppolys step prec pos =
+	let rec build_ppolys ppolys step res pos =
 		if step > 0 then
-			let polys   = Glyph.to_polys o prec in
+			let polys   = Glyph.to_polys ~res o in
 			let ppolys  = (pos, polys) :: ppolys in
-			let prec    = K.half (K.half prec) in
+			let res     = K.half (K.half res) in
 			let pos     = Point.add [| bbox_diag.(0) ; K.zero |] pos in
-			build_ppolys ppolys (step - 1) prec pos
+			build_ppolys ppolys (step - 1) res pos
 		else ppolys in
 	build_ppolys [] 7 (K.of_float 8.) [| ~-.70.; 0. |] |>
   List.map (fun (pos, polys) -> Algo.translate_poly polys pos) |>

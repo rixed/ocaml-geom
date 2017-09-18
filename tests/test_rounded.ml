@@ -28,8 +28,8 @@ let letters_view =
 		let pos = [| K.zero ; K.of_float y |]
 		and radius = K.of_float radius in
 		let paths = Path.rounded ~radius box in
-		let prec = K.of_float 0.01 in
-		pos, Algo.polys_of_paths prec paths)
+		let res = K.of_float 0.01 in
+		pos, Algo.polys_of_paths ~res paths)
     [ 0.1, -15. ; 1., 0. ; 2.5, 15. ] |>
   List.map (fun (pos, polys) -> Algo.translate_poly polys pos) |>
   List.concat |>

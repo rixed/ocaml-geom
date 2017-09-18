@@ -22,7 +22,7 @@ let draw_polys polys =
 
 let word_polys =
   let word = Word.make "T.AVO" in
-  Word.to_polys word K.one |>
+  Word.to_polys ~res:K.one word |>
   List.map (fun (pos, polys) -> Algo.translate_poly polys pos) |>
   List.concat
 

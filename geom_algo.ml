@@ -301,7 +301,7 @@ struct
   let scale_poly polys center ratio =
     List.map (fun p -> scale_single_poly p center ratio) polys
 
-  let poly_of_path res path =
+  let poly_of_path ~res path =
     let poly = ref Poly.empty in
     Path.iter res path (fun pt ->
       if Poly.is_empty !poly ||
@@ -313,8 +313,8 @@ struct
     (* Returns with focus on the path starting point: *)
     Poly.next !poly
 
-  let polys_of_paths res paths =
-    List.map (poly_of_path res) paths
+  let polys_of_paths ~res paths =
+    List.map (poly_of_path ~res) paths
 
   let inflate dist =
     let open Point.Infix in
@@ -330,7 +330,7 @@ struct
     (* First close the path by looping it along its edges, then convert it
      * to a poly as usual, then inflate the poly: *)
     Path.concat path (Path.reverse path) |>
-    poly_of_path res |>
+    poly_of_path ~res |>
     inflate (K.half width)
 
   module Monotonizer =

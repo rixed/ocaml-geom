@@ -32,7 +32,7 @@ let test_path =
 
 let letter_a =
   Algo.scale_poly
-    (Glyph.to_polys (Glyph.make 'a') (K.of_float 1.2))
+    (Glyph.to_polys ~res:(K.of_float 1.2) (Glyph.make 'a'))
     P.zero
     (K.of_float 0.1)
 
@@ -87,7 +87,7 @@ let polys =
       make_point (-1.) 0.7
     |] ] ;
     [ square ; Algo.reverse_single (Algo.scale_single_poly square P.zero (K.of_float 0.5)) ] ;
-    [ Algo.poly_of_path (P.K.of_float 0.2) test_path ] ;
+    [ Algo.poly_of_path ~res:(P.K.of_float 0.2) test_path ] ;
     [ Algo.line_of_path ~width:(P.K.of_float 0.2) ~res:(P.K.of_float 0.1) test_path ] ;
     letter_a ;
     List.map (Algo.inflate (P.K.of_float 0.1)) letter_a

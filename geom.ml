@@ -214,10 +214,10 @@ sig
   val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.t
 
   (** Close the path if not already, and convert it to a Polygon: *)
-  val poly_of_path : Path.Point.K.t -> Path.t -> Poly.t
+  val poly_of_path : res:Path.Point.K.t -> Path.t -> Poly.t
 
   (** Same as [poly_of_path] but doing several paths in one go: *)
-  val polys_of_paths : Path.Point.K.t -> Path.t list -> Poly.t list
+  val polys_of_paths : res:Path.Point.K.t -> Path.t list -> Poly.t list
 
   (** Take an open path and turn it into a flat poly. [res] is the
    * resolution for the interpolators while [width] is the desired
