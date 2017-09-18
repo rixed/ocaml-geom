@@ -86,7 +86,7 @@ let polys =
       make_point (-0.7) 1. ;  (* 20 *)
       make_point (-1.) 0.7
     |] ] ;
-    [ square ; Algo.inverse_single (Algo.scale_single_poly square P.zero (K.of_float 0.5)) ] ;
+    [ square ; Algo.reverse_single (Algo.scale_single_poly square P.zero (K.of_float 0.5)) ] ;
     [ Algo.poly_of_path (P.K.of_float 0.2) test_path ] ;
     letter_a ;
     List.map (Algo.inflate (P.K.of_float 0.1)) letter_a

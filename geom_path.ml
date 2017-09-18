@@ -56,12 +56,12 @@ struct
       Point.add p disp, List.map (fun p -> Point.add p disp) ctrls, i in
     { start = Point.add path.start disp ; edges = List.map edge_translate path.edges }
 
-  let rec inverse path = match path.edges with
+  let rec reverse path = match path.edges with
     | [] -> path
     | [target, ctrls, interp] ->
       { start = target ; edges = [ path.start, List.rev ctrls, interp ] }
     | (target, ctrls, interp) :: e' ->
-      inverse { start = target ; edges = e' } |>
+      reverse { start = target ; edges = e' } |>
       extend path.start (List.rev ctrls) interp
 
   let center path =
@@ -335,5 +335,5 @@ struct
     let thickness = [| width ; width |] in
     let corner00' = Point.add corner00 thickness
     and corner10' = Point.sub corner10 thickness in
-    [ rectangle corner00 corner10 ; inverse (rectangle corner00' corner10') ]
+    [ rectangle corner00 corner10 ; reverse (rectangle corner00' corner10') ]
 end

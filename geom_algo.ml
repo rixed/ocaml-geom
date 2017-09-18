@@ -275,14 +275,14 @@ struct
       false
     ) with Exit -> true
 
-  let inverse_single poly =
+  let reverse_single poly =
     let ret = ref Poly.empty in
     Poly.iter (fun point -> ret := Poly.insert_before !ret point) poly ;
     !ret
 
-  let inverse_polys polys = List.map inverse_single polys
+  let reverse_polys polys = List.map reverse_single polys
 
-  let inverse_paths paths = List.map Path.inverse paths
+  let reverse_paths paths = List.map Path.reverse paths
 
   let transform poly f =
     let new_poly = ref Poly.empty in
@@ -318,7 +318,7 @@ struct
   let flat_poly_of_path res path =
     (* First close the path by looping it along its edges, then convert it
      * to a poly as usual: *)
-    Path.concat path (Path.inverse path) |>
+    Path.concat path (Path.reverse path) |>
     poly_of_path res
 
   let inflate dist =

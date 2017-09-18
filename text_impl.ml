@@ -91,7 +91,7 @@ struct
     let get_all_paths () =
       let paths = ref [] in
       for c = 0 to outline.n_contours-1 do paths := get_path c :: !paths done ;
-      if is_clockwise !paths then Algo.inverse_paths !paths else !paths in
+      if is_clockwise !paths then Algo.reverse_paths !paths else !paths in
     { index = index ;
       paths = get_all_paths () ;
       advance_x = advance_x ;

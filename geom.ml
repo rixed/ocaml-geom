@@ -133,9 +133,9 @@ sig
   (** Translates a path. *)
   val translate : Point.t -> t -> t
 
-  (** Inverse a path so that its last point become its new starting point
+  (** Reverse a path so that its last point become its new starting point
    * and the other way around. *)
-  val inverse : t -> t
+  val reverse : t -> t
 
   (** Return the center position of a path. *)
   val center : t -> point
@@ -213,9 +213,9 @@ sig
   val triangulate_slow : Poly.t list -> Poly.t list
   val intersect_polys : Poly.Point.t -> Poly.Point.t -> Poly.t list -> bool
   val monotonize : Poly.t list -> Poly.t list
-  val inverse_polys : Poly.t list -> Poly.t list
-  val inverse_single : Poly.t -> Poly.t
-  val inverse_paths : Path.t list -> Path.t list
+  val reverse_polys : Poly.t list -> Poly.t list
+  val reverse_single : Poly.t -> Poly.t
+  val reverse_paths : Path.t list -> Path.t list
   val simplify : Poly.t list -> Poly.t
   val translate_poly : Poly.t list -> Poly.Point.t -> Poly.t list
   val translate_single_poly : Poly.t -> Poly.Point.t -> Poly.t
