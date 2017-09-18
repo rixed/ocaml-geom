@@ -53,8 +53,8 @@ struct
 
   let translate disp path =
     let edge_translate (p, ctrls, i) =
-      Point.add p disp, List.map (fun p -> Point.add p disp) ctrls, i in
-    { start = Point.add path.start disp ; edges = List.map edge_translate path.edges }
+      p +~ disp, List.map ((+~) disp) ctrls, i in
+    { start = path.start +~ disp ; edges = List.map edge_translate path.edges }
 
   let rec reverse path = match path.edges with
     | [] -> path
@@ -66,11 +66,11 @@ struct
 
   let center path =
     (* FIXME: we should add the center of each edge instead of adding the starting point and every edge's last *)
-    let add_pos p (n, _, _) = Point.add p n in
+    let add_pos p (n, _, _) = p +~ n in
     Point.mul (Point.K.inv (Point.K.of_int (length path))) (List.fold_left add_pos path.start path.edges)
 
   let scale ~center scale path =
-    let scale_me p = Point.add center (Point.mul scale (Point.sub p center)) in
+    let scale_me p = center +~ (Point.mul scale (Point.sub p center)) in
     let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
     { start = scale_me path.start ; edges = List.map edge_scale path.edges }
 
