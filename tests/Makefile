@@ -26,6 +26,6 @@ $(PROGRAMS:.opt=.byte): $(top_srcdir)/geom.cma
 	$(OCAMLOPT) -package "$(REQUIRES)" -I $(top_srcdir) geom.cmxa -linkpkg $(OCAMLOPTFLAGS) $< -o $@
 
 clean-spec:
-	@rm -f $(PROGRAMS) $(PROGRAMS:.opt=.byte)
+	$(RM) $(PROGRAMS) $(PROGRAMS:.opt=.byte)
 
 -include .depend
