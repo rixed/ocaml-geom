@@ -219,9 +219,11 @@ sig
   (** Same as [poly_of_path] but doing several paths in one go: *)
   val polys_of_paths : Path.Point.K.t -> Path.t list -> Poly.t list
 
-  (** Take an open path and turn it into a flat poly. The given scalar
-   * is the resolution for the interpolators. *)
-  val flat_poly_of_path : Path.Point.K.t -> Path.t -> Poly.t
+  (** Take an open path and turn it into a flat poly. [res] is the
+   * resolution for the interpolators while [width] is the desired
+   * width of the resulting polygon (please keep it >= 0). *)
+  val line_of_path : width:Path.Point.K.t -> res:Path.Point.K.t ->
+                     Path.t -> Poly.t
 
   (** Move each edge of a poly away (on the right) by a given distance: *)
   val inflate : Path.Point.K.t -> Poly.t -> Poly.t

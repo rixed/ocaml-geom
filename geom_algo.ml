@@ -316,12 +316,6 @@ struct
   let polys_of_paths res paths =
     List.map (poly_of_path res) paths
 
-  let flat_poly_of_path res path =
-    (* First close the path by looping it along its edges, then convert it
-     * to a poly as usual: *)
-    Path.concat path (Path.reverse path) |>
-    poly_of_path res
-
   let inflate dist =
     let open Point.Infix in
     Poly.map_edges (fun start stop ->
@@ -331,6 +325,13 @@ struct
       let open Point in
       let dir = stop -~ start |> normalize |> turn_right |> mul dist in
       start +~ dir, stop +~ dir)
+
+  let line_of_path ~width ~res path =
+    (* First close the path by looping it along its edges, then convert it
+     * to a poly as usual, then inflate the poly: *)
+    Path.concat path (Path.reverse path) |>
+    poly_of_path res |>
+    inflate (K.half width)
 
   module Monotonizer =
   struct
