@@ -14,93 +14,94 @@ module Algo = Geom_algo.Algorithms (Poly) (Path)
 module Glyph = Text_impl.Glyph (Poly) (Path)
 
 let make_poly parr =
-	let rec add_point pol n =
-		if n >= Array.length parr then pol
-		else add_point (Poly.insert_after pol parr.(n)) (n+1) in
-	add_point Poly.empty 0
+  let rec add_point pol n =
+    if n >= Array.length parr then pol
+    else add_point (Poly.insert_after pol parr.(n)) (n+1) in
+  add_point Poly.empty 0
 
 let square = make_poly [|
-	make_point (-1.) (-1.) ;
-	make_point 1. (-1.) ;
-	make_point 1. 1. ;
-	make_point (-1.) 1.
+  make_point (-1.) (-1.) ;
+  make_point 1. (-1.) ;
+  make_point 1. 1. ;
+  make_point (-1.) 1.
 |] 
 
 let test_path = 
-	Path.extend (Path.empty (make_point (-1.) 1.)) (make_point 1. 1.) [ make_point (-1.) (-2.) ; make_point 1. (-2.) ] Path.make_bezier_curve
+  Path.empty (make_point (-1.) 1.) |>
+  Path.bezier_to (make_point 1. 1.) [ make_point (-1.) (-2.) ; make_point 1. (-2.) ]
 
 let letter_a =
-	Algo.scale_poly
-		(Glyph.to_polys (Glyph.make 'a') (G.K.of_float 1.2))
-		P.zero
-		(G.K.of_float 0.1)
+  Algo.scale_poly
+    (Glyph.to_polys (Glyph.make 'a') (K.of_float 1.2))
+    P.zero
+    (K.of_float 0.1)
 
 let polys =
-	let polys_list = [
-		[ square ] ;
-		[ make_poly [|
-			make_point (-1.) (-1.) ;
-			make_point 1. (-1.) ;
-			make_point 1. 1. ;
-			make_point 0.5 1. ;
-			make_point 0.5 (-0.5) ;
-			make_point (-0.5) (-0.5) ;
-			make_point (-0.5) 1. ;
-			make_point (-1.) 1.
-		|] ] ;
-		[ make_poly [|
-			make_point (-1.) (-1.) ;
-			make_point 1. (-1.) ;
-			make_point 0.8 1. ;
-			make_point 0.6 (-0.5) ;
-			make_point 0.4 1. ;
-			make_point 0.2 (-0.5) ;
-			make_point 0. 1. ;
-			make_point (-0.2) (-0.5) ;
-			make_point (-0.4) 1. ;
-			make_point (-0.6) (-0.5) ;
-			make_point (-0.8) 1.
-		|] ] ;
-		[ make_poly [|
-			make_point (-1.) 0.5 ;
-			make_point (-0.7) 0.5 ;
-			make_point (-0.7) 0.7 ;
-			make_point 0.7 0.7 ;
-			make_point 0.7 0.15 ;
-			make_point (-0.7) 0.15 ;	(* 5 *)
-			make_point (-1.) (-0.15) ;
-			make_point (-1.) (-0.7) ;
-			make_point (-0.7) (-1.) ;
-			make_point 0.7 (-1.) ;
-			make_point 1. (-0.7) ;	(* 10 *)
-			make_point 1. (-0.5) ;
-			make_point 0.7 (-0.5) ;
-			make_point 0.7 (-0.7) ;
-			make_point (-0.7) (-0.7) ;
-			make_point (-0.7) (-0.15) ;	(* 15 *)
-			make_point 0.7 (-0.15) ;
-			make_point 1. 0.15 ;
-			make_point 1. 0.7 ;
-			make_point 0.7 1. ;
-			make_point (-0.7) 1. ;	(* 20 *)
-			make_point (-1.) 0.7
-		|] ] ;
-		[ square ; Algo.inverse_single (Algo.scale_single_poly square P.zero (G.K.of_float 0.5)) ] ;
-		[ Algo.poly_of_path test_path (P.K.of_float 0.2) ] ;
-		letter_a
-	] in
-	let poly_pos n =
-		let nb_polys = List.length polys_list in
-		let poly_size = 2.5 in
-		let x = n mod nb_polys in
-		let y = n / nb_polys in
-		[| G.K.of_float (float_of_int (x - nb_polys/2) *. poly_size) ;
-		   G.K.of_float ((1.5 -. float_of_int y) *. poly_size) ;
-		   G.K.zero |] in
-	let list_mapi f l =
-		let n = ref 0 in
-		List.map (fun a -> let b = f !n a in incr n ; b) l in
-	list_mapi (fun n poly -> Algo.translate_poly poly (poly_pos n)) polys_list
+  let polys_list = [
+    [ square ] ;
+    [ make_poly [|
+      make_point (-1.) (-1.) ;
+      make_point 1. (-1.) ;
+      make_point 1. 1. ;
+      make_point 0.5 1. ;
+      make_point 0.5 (-0.5) ;
+      make_point (-0.5) (-0.5) ;
+      make_point (-0.5) 1. ;
+      make_point (-1.) 1.
+    |] ] ;
+    [ make_poly [|
+      make_point (-1.) (-1.) ;
+      make_point 1. (-1.) ;
+      make_point 0.8 1. ;
+      make_point 0.6 (-0.5) ;
+      make_point 0.4 1. ;
+      make_point 0.2 (-0.5) ;
+      make_point 0. 1. ;
+      make_point (-0.2) (-0.5) ;
+      make_point (-0.4) 1. ;
+      make_point (-0.6) (-0.5) ;
+      make_point (-0.8) 1.
+    |] ] ;
+    [ make_poly [|
+      make_point (-1.) 0.5 ;
+      make_point (-0.7) 0.5 ;
+      make_point (-0.7) 0.7 ;
+      make_point 0.7 0.7 ;
+      make_point 0.7 0.15 ;
+      make_point (-0.7) 0.15 ;  (* 5 *)
+      make_point (-1.) (-0.15) ;
+      make_point (-1.) (-0.7) ;
+      make_point (-0.7) (-1.) ;
+      make_point 0.7 (-1.) ;
+      make_point 1. (-0.7) ;  (* 10 *)
+      make_point 1. (-0.5) ;
+      make_point 0.7 (-0.5) ;
+      make_point 0.7 (-0.7) ;
+      make_point (-0.7) (-0.7) ;
+      make_point (-0.7) (-0.15) ; (* 15 *)
+      make_point 0.7 (-0.15) ;
+      make_point 1. 0.15 ;
+      make_point 1. 0.7 ;
+      make_point 0.7 1. ;
+      make_point (-0.7) 1. ;  (* 20 *)
+      make_point (-1.) 0.7
+    |] ] ;
+    [ square ; Algo.inverse_single (Algo.scale_single_poly square P.zero (K.of_float 0.5)) ] ;
+    [ Algo.poly_of_path (P.K.of_float 0.2) test_path ] ;
+    letter_a ;
+    List.map (Algo.inflate (P.K.of_float 0.1)) letter_a
+  ] in
+  let poly_pos n =
+    let nb_polys = List.length polys_list in
+    let poly_size = 2.1 in
+    let x = n mod nb_polys in
+    let y = n / nb_polys in
+    [| K.of_float (float_of_int (x - nb_polys/2) *. poly_size) ;
+       K.of_float ((1.5 -. float_of_int y) *. poly_size) |] in
+  let list_mapi f l =
+    let n = ref 0 in
+    List.map (fun a -> let b = f !n a in incr n ; b) l in
+  list_mapi (fun n poly -> Algo.translate_poly poly (poly_pos n)) polys_list
 
 let draw_polys polys =
   let image = Img.make ~default:Color.white 800 600 in

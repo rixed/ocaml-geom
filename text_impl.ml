@@ -53,8 +53,10 @@ struct
     let rec path_of_contour next first last path =
       if next > last then path else (
         match outline.tags.(next) with
-        | On_point -> path_of_contour (next+1) first last
-          (Path.extend path (to_point outline.points.(next)) [] Path.make_straight_line)
+        | On_point ->
+          path_of_contour (next+1) first last
+            (Path.extend (to_point outline.points.(next))
+              [] Path.make_straight_line path)
         | Off_point_conic ->
           let next_s = next_point first last (next+1) in
           let middle_point (x1,y1) (x2,y2) = ((x1 +. x2) /. 2., (y1 +. y2) /. 2.) in
@@ -66,17 +68,17 @@ struct
             | Off_point_cubic -> (* bug *)
               failwith "Bad font encoding") in
           path_of_contour next_next first last
-            (Path.extend path (to_point next_current)
+            (Path.extend (to_point next_current)
               [ to_point outline.points.(next) ]
-              Path.make_bezier_curve)
+              Path.make_bezier_curve path)
         | Off_point_cubic ->
           let next_s  = next_point first last (next+1)
           and next_ss = next_point first last (next+2) in
           path_of_contour (next+3) first last
-            (Path.extend path (to_point outline.points.(next_ss))
+            (Path.extend (to_point outline.points.(next_ss))
               [ to_point outline.points.(next) ;
                 to_point outline.points.(next_s) ]
-              Path.make_bezier_curve)
+              Path.make_bezier_curve path)
       ) in
     let get_path c =
       let first = if c = 0 then 0 else outline.contours.(c-1)+1 in
@@ -101,7 +103,7 @@ struct
       mutable idx    : int ;
               polys  : Poly.t list }
 
-  let max_kept_glyphs = 200 (* we keep only this amout of glyphs, the more used *)
+  let max_kept_glyphs = 200 (* we keep only this amount of glyphs, the more used *)
 
   (* Array is ordered in descending nb_use count *)
   let used_glyphs = Array.init max_kept_glyphs (fun i -> { nb_use = 0 ; idx = i ; polys = [] })
@@ -142,7 +144,7 @@ struct
     let key = glyph.index, prec in
     try get_cached key
     with Not_found ->
-      let polys = Algo.polys_of_paths glyph.paths prec in
+      let polys = Algo.polys_of_paths prec glyph.paths in
       add_cache key polys ;
       polys
   
@@ -193,8 +195,8 @@ struct
 
   let bbox word =
     (* A glyph has no position since it's only the "pure", abstract representation of a symbol.
-       But glyphs in words are positionned. So we must compute the bbox as the union of all
-       glyph's bboxes translated to match glyph potision in word. *)
+       But glyphs in words are positioned. So we must compute the bbox as the union of all
+       glyph's bboxes translated to match glyph position in word. *)
     let rec aux bbox = function
       | [] -> bbox
       | (pos, glyph) :: others ->

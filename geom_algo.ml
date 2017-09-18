@@ -1,7 +1,11 @@
-module ConvexHullSet : Geom.CONVEX_HULL_SET =
-  functor (Poly : Geom.POLYGON) ->
-  functor (PSet : Geom.POINT_SET with module Point = Poly.Point) ->
+module ConvexHullSet
+  (Poly : Geom.POLYGON)
+  (PSet : Geom.POINT_SET with module Point = Poly.Point) :
+  Geom.CONVEX_HULL_SET with module Poly = Poly and module PSet = PSet =
 struct
+  module Poly = Poly
+  module PSet = PSet
+
   let convex_hull points =
     let edges = Hashtbl.create (PSet.size points) in
     let last_point = ref None in
@@ -215,7 +219,8 @@ struct
         list_iter_with_cmpl (fun prev_polys poly next_polys ->
           match best_connection poly with
           | None -> ()
-          | Some (p0, p1, ()) -> choose_best p0 p1 (List.rev_append prev_polys next_polys))
+          | Some (p0, p1, ()) ->
+            choose_best p0 p1 (List.rev_append prev_polys next_polys))
           polys ;
         match pick_best () with
         | None -> poly0
@@ -296,7 +301,7 @@ struct
   let scale_poly polys center ratio =
     List.map (fun p -> scale_single_poly p center ratio) polys
 
-  let poly_of_path path res =
+  let poly_of_path res path =
     let poly = ref Poly.empty in
     Path.iter res path (fun pt ->
       if Poly.is_empty !poly ||
@@ -307,8 +312,24 @@ struct
         poly := Poly.insert_after !poly pt) ;
     !poly
 
-  let polys_of_paths paths res =
-    List.map (fun path -> poly_of_path path res) paths
+  let polys_of_paths res paths =
+    List.map (poly_of_path res) paths
+
+  let flat_poly_of_path res path =
+    (* First close the path by looping it along its edges, then convert it
+     * to a poly as usual: *)
+    Path.concat path (Path.inverse path) |>
+    poly_of_path res
+
+  let inflate dist =
+    let open Point.Infix in
+    Poly.map_edges (fun start stop ->
+      (* Poly exterior being on the right (clockwise convention)
+       * then we want to move this edge on the right to inflate the
+       * shape. *)
+      let open Point in
+      let dir = stop -~ start |> normalize |> turn_right |> mul dist in
+      start +~ dir, stop +~ dir)
 
   module Monotonizer =
   struct
@@ -332,6 +353,9 @@ struct
       let prev, point, next = prev_pt poly, Poly.get poly, next_pt poly in
       let cmp1 = compare_point_y prev point in
       let cmp2 = compare_point_y next point in
+      if debug then (
+        if cmp1 = 0 then Format.printf "cmp1: prev=%a = point=%a!@." Point.print prev Point.print point ;
+        if cmp2 = 0 then Format.printf "cmp2: prev=%a = point=%a!@." Point.print next Point.print point) ;
       assert (cmp1 <> 0 && cmp2 <> 0) ;
       if cmp1 = -1 && cmp2 = 1 then Regular_down else
       if cmp1 = 1 && cmp2 = -1 then Regular_up else
@@ -506,6 +530,7 @@ struct
           tree := Tree.remove !tree prev ;
           if debug then print_tree ()
         | Split ->
+          (* Fails here? Make sure this poly is clockwise! *)
           let at_left = Tree.find_before !tree vertex in
           add_diag ppoly i at_left.helper ;
           at_left.helper <- i ;
@@ -645,51 +670,58 @@ struct
   (* Rasterization *)
 
   type coverage_cell = { x : int ; cover : K.t ; area : K.t }
+
   let rasterize polys f =
-    (* We first build an array of ordered lists of cells (one for each scan line),
-     * where a cell is an x position and a coverage ratio (ie. a number between -1 and 1).
-     * We have cells only for interresting locations, ie where polygon edges are present.
-     * Then we extend these values and call f for all regions with a coverage ratio > 0.
-     *)
+    (* We first build an array of ordered lists of cells (one for each scan
+     * line), where a cell is an x position and a coverage ratio (ie. a number
+     * between -1 and 1).  We have cells only for interesting locations, ie
+     * where polygon edges are present.  Then we extend these values and call f
+     * for all regions with a coverage ratio > 0.  *)
     let rasterize_non_empty ym yM =
       let ym_int = K.to_int ym in
       let y_to_idx y = (K.to_int y) - ym_int in
       let nb_y = (y_to_idx yM) + 1 in
       let cells_arr = Array.init nb_y (fun _ -> []) in
-      (* Now for each edges, we progress from starting point to next point on pixel grid
-       * (ie either final edge point if it's in same grid cell, or next intersection between
-       * the edge and grid boundaries), adding the coverage for this segment. *)
+      (* Now for each edges, we progress from starting point to next point on
+       * pixel grid (ie either final edge point if it's in the same pixel, or
+       * next intersection between the edge and pixel-grid borders), adding the
+       * coverage for this segment. *)
       let rasterize_poly poly =
+        let open K.Infix in
         let add_coverage p1 p2 =
-          (* both p1 and p2 are within the same cell, not on the same border *)
+          (* both p1 and p2 are within the same pixel and not on the same
+           * border *)
           let p = Point.center p1 p2 in (* so that p is not on a cell border *)
           let idx = y_to_idx p.(1) in
-          let cover = K.sub p1.(1) p2.(1) in
+          (* cover will be > 0 if we are going down (decreasing Y), ie.
+           * the poly is on the right side of that pixel. *)
+          let cover = p1.(1) -~ p2.(1) in
           let cell_end_x = K.ceil p.(0) in
-          let area = K.mul cover (K.sub cell_end_x p.(0)) in
+          let area = cover *~ (cell_end_x -~ p.(0)) in
           cells_arr.(idx) <-
-            { x     = K.to_int p.(0) ;
-              cover = cover ;
-              area  = area } :: cells_arr.(idx) in
+            { x = K.to_int p.(0) ; cover ; area } :: cells_arr.(idx) in
         let do_clip p1 p2 d next_d =
           let nd = d lxor 1 in
           let dp = Point.sub p2 p1 in
-          let nd_diff = K.div
-            (K.mul dp.(nd) (K.sub next_d p1.(d)))
-            dp.(d) in
-          let next_nd = K.add p1.(nd) nd_diff in
+          let nd_diff =
+            (dp.(nd) *~ (next_d -~ p1.(d))) /~ dp.(d) in
+          let next_nd = p1.(nd) +~ nd_diff in
           Array.init 2 (fun i -> if i = d then next_d else next_nd) in
         let clip_in_dir d p1 p2 =
           if K.compare p1.(d) p2.(d) <= 0 then (
             let next_d = K.ceil p1.(d) in
             let next_d = if K.compare next_d p1.(d) = 0 then
               K.add next_d K.one else next_d in
-            if p2.(d) > next_d then do_clip p1 p2 d next_d else p2
+            if K.compare p2.(d) next_d > 0 then
+              do_clip p1 p2 d next_d
+            else p2
           ) else (
             let next_d = K.floor p1.(d) in
             let next_d = if K.compare next_d p1.(d) = 0 then
               K.sub next_d K.one else next_d in
-            if p2.(d) < next_d then do_clip p1 p2 d next_d else p2
+            if K.compare p2.(d) next_d < 0 then
+              do_clip p1 p2 d next_d
+            else p2
           ) in
         let rec add_edge p1 p2 =
           if Point.compare p1 p2 <> 0 then (
@@ -699,30 +731,38 @@ struct
             add_edge p' p2
           ) in
         Poly.iter_edges poly add_edge in
-      List.iter rasterize_poly polys;
+      List.iter rasterize_poly polys ;
       (* Then for each scanline, we call f for every plotted cell *)
       let scan_one_line idx cells =
-        (* iter through the sorted cells, accumulating area when x don't change
-         * and cover along the scanline, then calling f with area, x_start and x_end. *)
+        let open K.Infix in
+        (* Iter through the sorted cells, accumulating area when x don't
+         * change and cover along the scanline, then calling f with area,
+         * x_start and x_end. *)
         let y = ym_int + idx in
         let rec aux last = function
           | [] ->
             f last.x last.x y last.area ;
-            assert (K.compare K.zero last.cover = 0)
+            if K.compare K.zero last.cover != 0 then
+              if debug then
+                Format.printf "bug: last cover = %a instead of 0@."
+                  K.print last.cover ;
+            assert (K.compare (K.abs last.cover) (K.of_float 1e-10) = -1)
           | next::cells ->
             if last.x = next.x then
-              aux { next with cover = K.add last.cover next.cover ;
-                              area  = K.add last.area  next.area } cells
+              (* merge the two cells and draw that instead: *)
+              aux { next with cover = last.cover +~ next.cover ;
+                              area  = last.area  +~ next.area } cells
             else (
               assert (next.x > last.x) ;
               f last.x last.x y last.area ;
-              if last.x+1 <= next.x-1 then
+              if last.x+1 < next.x then
                 f (last.x+1) (next.x-1) y last.cover ;
-              aux { next with cover = K.add last.cover next.cover ;
-                              area  = K.add last.cover next.area } cells
+              aux { next with cover = last.cover +~ next.cover ;
+                              area  = last.cover +~ next.area } cells
             ) in
         (* sort the cells along x *)
-        let sorted_cells = List.sort (fun c1 c2 -> compare c1.x c2.x) cells in
+        let sorted_cells =
+          List.sort (fun c1 c2 -> compare c1.x c2.x) cells in
         match sorted_cells with
         | [] -> ()
         | cell::cells -> aux cell cells in
@@ -735,13 +775,11 @@ struct
 
   (* Utilities *)
 
-  let extend_straight_to path point =
-    Path.extend path point [] Path.make_straight_line
-
   let path_of_points = function
     | [] -> failwith "Cannot build path from no points"
     | start::nexts ->
-      List.fold_left extend_straight_to (Path.empty start) nexts
+      List.fold_left (fun p next -> Path.straight_to next p)
+        (Path.empty start) nexts
 
   let poly_of_points points =
     List.fold_left Poly.insert_after Poly.empty points

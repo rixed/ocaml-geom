@@ -4,6 +4,9 @@ module Point (Vector : VECTOR)
   : Geom.POINT with module K = Vector.K =
 struct
   include Vector
+  open K.Infix
+
+  let origin = zero
 
   let area a b = K.sub (K.mul a.(0) b.(1)) (K.mul a.(1) b.(0))
 
@@ -41,7 +44,28 @@ struct
     (* Only one of {p0,p1} is at left of (q0,q1) *)
     ((at_left q0 q1 p0) ^^ (at_left q0 q1 p1))
 
-  let copy p = add p zero
+  let turn_right = function
+    | [| x; y |] -> [| y; ~-~ x |]
+    | _ -> assert false
+
+  let turn_left = function
+    | [| x; y |] -> [| ~-~ y; x |]
+    | _ -> assert false
+
+  let determinant a b c d = (a *~ d) -~ (b *~ c)
+
+  let intersection p0 p1 q0 q1 =
+    let x1 = p0.(0) and y1 = p0.(1)
+    and x2 = p1.(0) and y2 = p1.(1)
+    and x3 = q0.(0) and y3 = q0.(1)
+    and x4 = q1.(0) and y4 = q1.(1) in
+    let den = determinant (x1 -~ x2) (y1 -~ y2) (x3 -~ x4) (y3 -~ y4) in
+    if den =~ K.zero then None else
+    let det1 = determinant x1 y1 x2 y2
+    and det2 = determinant x3 y3 x4 y4 in
+    Some [|
+      (determinant det1 (x1 -~ x2) det2 (x3 -~ x4)) /~ den ;
+      (determinant det1 (y1 -~ y2) det2 (y3 -~ y4)) /~ den |]
 
   let center p1 p2 =
     let p = add p1 p2 in
@@ -53,7 +77,6 @@ module Polygon
   : Geom.POLYGON with module Point = Point =
 struct
   module Point = Point
-  type e = Point.t
 
   module Ring = Ring_impl.Ring
   type 'a ring = 'a Ring.t
@@ -88,6 +111,56 @@ struct
       t ;
     Format.pp_print_string ff "}" ;
     Format.pp_close_box ff ()
+
+  let map_edges f t =
+    (* Move prev_stop, last prev_ctrls next_start and first next_ctrls
+     * to make prev_stop and next_start equal: *)
+    let pp = Point.print in
+    let connect prev_start prev_stop
+                next_start next_stop =
+      if not (Point.eq prev_stop next_start) then (
+        let inters =
+          match Point.intersection prev_start prev_stop
+                                   next_start next_stop with
+          | None ->
+            (* No intersection. Arbitrarily, let's move the next point
+             * at the location of the previous one. TODO: instead, what
+             * we want is to create a new edge joining prev and next.
+             * For instance, this fails with flat polys made of only 2
+             * edges. *)
+            prev_stop
+          | Some i -> i in
+        Point.copyi prev_stop inters ;
+        Point.copyi next_start inters ;
+        Format.printf "Moved prev_stop and next_start to %a@." pp inters
+      ) in
+    let p =
+      fold_leftr (fun p t ->
+          let start = get t and stop = get (next t) in
+          let start', stop' = f start stop in
+          Format.printf "Mapping %a,%a into %a,%a@."
+            pp start pp stop pp start' pp stop' ;
+          if is_empty p then (
+            (* If we haven't inserted anything yet, no question asked,
+             * but we will get back to it at the end: *)
+            insert_after (insert_after p start') stop'
+          ) else (
+            let prev_stop = get p and prev_start = get (prev p) in
+            connect prev_start prev_stop start' stop' ;
+            insert_after p stop'
+          )
+        ) empty t in
+    (* We haven't "connected" the first and the last points.
+     * After fold_leftr we end up with p cursor on the last inserted
+     * point. So we must _merge_ it with the next one (for so far,
+     * we have one extra point): *)
+    let prev_start = get (prev p) and prev_stop = get p
+    and next_start = get (next p) and next_stop = get (next (next p)) in
+    connect prev_start prev_stop next_start next_stop ;
+    (* So now prev_stop and next_start have been moved to the same
+     * position, and we must get rid of one of them. We remove prev_stop
+     * so we end up with the cursor on the starting point, which is nice:*)
+    remove p
 
   let translate t v =
     map (fun p -> Point.add p v) t

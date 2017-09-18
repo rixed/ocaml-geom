@@ -4,6 +4,8 @@ module type POINT =
 sig
   include VECTOR
 
+  val origin : t
+
   (** >0 if the 3rd point is "at left" of the line formed by first two. *)
   val compare_left : t -> t -> t -> int
 
@@ -14,7 +16,12 @@ sig
   val compare_x : t -> t -> int
   val compare_y : t -> t -> int
 
+  (* Quickly tells if the two lines/segments intersects *)
   val intersect : ?closed:bool -> t -> t -> t -> t -> bool
+
+  (** [intersection p1 p2 q1 q2] returns the location of the intersection
+   * of lines (p0, p1) and (q1, q2), or None if they do not intersect. *)
+  val intersection : t -> t -> t -> t -> t option
 
   val copy : t -> t
 
@@ -22,6 +29,12 @@ sig
   (** [area a b] returns the area of the parallelogram build from O a and b *)
 
   val center : t -> t -> t
+
+  val determinant : K.t -> K.t -> K.t -> K.t -> K.t
+
+  val turn_left : t -> t
+
+  val turn_right : t -> t
 end
 
 module type POINT_SET =
@@ -45,21 +58,19 @@ end
 module type POLYGON =
 sig
   module Point : POINT
-  include Pfds_intf.ITERABLE with type e = Point.t
-
-  val get           : t -> Point.t
-  val next          : t -> t
-  val prev          : t -> t
-  val insert_before : t -> Point.t -> t
-  val insert_after  : t -> Point.t -> t
-  val remove        : t -> t
-  val iterr         : (t -> unit) -> t -> unit
-  val iterir        : (int -> t -> unit) -> t -> unit
-  val fold_leftr    : ('b -> t -> 'b) -> 'b -> t -> 'b
-  val fold_rightr   : (t -> 'b -> 'b) -> t -> 'b -> 'b
+  type 'a ring
+  include Pfds_intf.RING_GEN with type 'a t := 'a ring
+  type t = Point.t ring
 
   val iter_pairs    : (t -> t -> unit) -> t -> unit
   val iter_edges    : t -> (Point.t -> Point.t -> unit) -> unit
+
+  (** Map all the edges into a new edge and return the resulting polygon.
+   * If two successive edges are not connected any more, [map_edges] will
+   * connect them by moving those points to the intersection of those edges.
+   *)
+  val map_edges     : (Point.t -> Point.t -> Point.t * Point.t) -> t -> t
+
   val is_inside     : t -> Point.t -> bool
   val translate     : t -> Point.t (* should be vector *) -> t
   val print         : Format.formatter -> t -> unit
@@ -91,14 +102,21 @@ sig
   (** Return the empty path starting at given position. *)
   val empty : point -> t
 
+  (** Same as empty *)
+  val start : point -> t
+
   (** Tells if a path is empty *)
   val is_empty : t -> bool
 
   (** Tells if a path is closed (ie. last point eq first point) *)
   val is_closed : t -> bool
 
-  (** Extend a path *)
-  val extend : t -> point (* next one *) -> point list (* control pts *) -> interpolator -> t
+  (** Extend a path. On all transformation functions the transformed
+   * object is the last parameter to ease piping transformations. *)
+  val extend : point (* next one *) -> point list (* control pts *) -> interpolator -> t -> t
+
+  val straight_to : point -> t -> t
+  val bezier_to : point -> (point list) -> t -> t
 
   (** Build a path composed of the first one followed by the second one.
    * They are joint in such a way that the last point of the first path
@@ -113,8 +131,7 @@ sig
 
   (* These belongs to ALGO (rename to path_translate, etc) *)
   (** Translates a path. *)
-  (* FIXME: Point here should be Vector *)
-  val translate : t -> point -> t
+  val translate : Point.t -> t -> t
 
   (** Inverse a path so that its last point become its new starting point
    * and the other way around. *)
@@ -124,10 +141,10 @@ sig
   val center : t -> point
 
   (** Scale a path relatively to a point. *)
-  val scale : t -> point -> Point.K.t -> t
+  val scale : center:point -> Point.K.t -> t -> t
 
   (** Scale a path along a given axis. *)
-  val scale_along : point (*center*) -> point (*axis*) -> Point.K.t -> t -> t
+  val scale_along : center:point -> axis:point -> Point.K.t -> t -> t
 
   (** Returns only that part of the path that is on the left of the given
    * line. This can of course return 0, 1 or more paths. *)
@@ -137,13 +154,29 @@ sig
    * (except for straight lines) *)
   val iter : Point.K.t -> t -> (point -> unit) -> unit
 
+  (* TODO: fold! *)
+
   val iter_edges : t -> (point -> point -> unit) -> unit
 
+  (* Map all the edges (start, stop, control points, interpolator)
+   * into a new edge of a new path. If two successive edges are not
+   * connected any more, [map_edges] will connect them by moving those
+   * points to the intersection of those edges. If the path was closed,
+   * the same technique will be used to close the resulting path,
+   * otherwise the path extremities won't be connected.
+   * If the given path is empty, returns it unchanged. *)
+  val map_edges : (point -> point -> point list -> interpolator ->
+                   point * point * point list * interpolator) ->
+                  t -> t
+
+  (* Build another path which edges are given by the passed function,
+   * computed form the edges of the given path. Notice both path will
+   * have the same starting point. *)
   val map_pts : (point -> point list -> point * point list) -> t -> t
 
   (* Tells if the point is inside the given path. The additional K.t that's
-   * passed control the precision of the interpolators. If the path is not
-   * closed then the result is undefined. *)
+   * passed control the interpolators step. If the path is not closed then
+   * the result is undefined. *)
   val is_inside : Point.K.t -> t -> Point.t -> bool
 
   (* Returns the bbox englobing all control points (so an overestimation
@@ -163,8 +196,9 @@ sig
   module Path : PATH with module Point = Poly.Point
 
   val area_polys : Poly.t list -> Poly.Point.K.t
-  val area_paths_min : Path.t list -> Path.Point.K.t
+
   (** [area_paths_min paths] returns the area covered by the path as if they were composed of straight lines only *)
+  val area_paths_min : Path.t list -> Path.Point.K.t
 
   val is_convex_at : Poly.Point.t -> Poly.Point.t -> Poly.Point.t -> bool
   val is_convex : Poly.t -> bool
@@ -187,19 +221,30 @@ sig
   val translate_single_poly : Poly.t -> Poly.Point.t -> Poly.t
   val scale_poly : Poly.t list -> Poly.Point.t -> Poly.Point.K.t -> Poly.t list
   val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.t
-  (** Close the path and convert it to a Polygon. *)
 
-  val poly_of_path : Path.t -> Path.Point.K.t -> Poly.t
-  val polys_of_paths : Path.t list -> Path.Point.K.t -> Poly.t list
+  (** Close the path if not already, and convert it to a Polygon: *)
+  val poly_of_path : Path.Point.K.t -> Path.t -> Poly.t
+
+  (** Same as [poly_of_path] but doing several paths in one go: *)
+  val polys_of_paths : Path.Point.K.t -> Path.t list -> Poly.t list
+
+  (** Take an open path and turn it into a flat poly. The given scalar
+   * is the resolution for the interpolators. *)
+  val flat_poly_of_path : Path.Point.K.t -> Path.t -> Poly.t
+
+  (** Move each edge of a poly away (on the right) by a given distance: *)
+  val inflate : Path.Point.K.t -> Poly.t -> Poly.t
+
   val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.Point.t
   val bbox_single_poly : Poly.t -> Poly.Point.Bbox.t
   val bbox : Poly.t list -> Poly.Point.Bbox.t
 
-  (* Rasterization *)
+  (* [rasterize polys fun] will call [fun x1 x2 y alpha] for every pixel of
+   * the polygon *)
+  (* FIXME: clipping in Y and X! *)
   val rasterize : Poly.t list ->
    (int (* x_start *) -> int (* x_stop *) -> int (* y *) -> Poly.Point.K.t (* alpha *) -> unit) ->
     unit
-  (* [iter_rasters polys fun] will call [fun x y alpha] for every pixel of the polygon *)
 
   (* Some utilities *)
   val path_of_points : Poly.Point.t list -> Path.t
@@ -211,16 +256,16 @@ sig
 end
 
 module type CONVEX_HULL_SET =
-  functor (Poly : POLYGON) ->
-  functor (PSet : POINT_SET with module Point = Poly.Point) ->
 sig
+  module Poly : POLYGON
+  module PSet : POINT_SET with module Point = Poly.Point
   val convex_hull : PSet.t -> Poly.t
 end
 
 module type CONVEX_HULL_SORTED_SET =
-  functor (Poly : POLYGON) ->
-  functor (PXYL : POINT_XY_LIST with module Point = Poly.Point) ->
 sig
+  module Poly : POLYGON
+  module PXYL : POINT_XY_LIST with module Point = Poly.Point
   val convex_hull : PXYL.t -> Poly.t
 end
 
