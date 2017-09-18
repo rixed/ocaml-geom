@@ -1,30 +1,31 @@
-OCAMLPATH = ../..
+top_srcdir = ..
 
-PROGRAMS = test.byte test_word.byte test_prec.byte test_rounded.byte test_inside.byte
+PROGRAMS = test.opt test_word.opt test_prec.opt test_rounded.opt test_inside.opt
 
-all: libft2.a byte opt
-byte: $(PROGRAMS)
-opt: $(PROGRAMS:.byte=.opt)
+all: opt
+byte: $(PROGRAMS:.opt=.byte)
+opt: $(PROGRAMS)
 
-REQUIRES = geom glop
+REQUIRES = pfds oaah
 
 OCAMLFLAGS =
 OCAMLOPTFLAGS =
 
 ML_SOURCES = test.ml test_word.ml
+WITH_OWN_LIB = geom
 
-include ../make.common
+include $(top_srcdir)/make.common
 
-libft2.a:
-	ln -s ../libft2.a
+$(PROGRAMS): $(top_srcdir)/geom.cmxa
+$(PROGRAMS:.opt=.byte): $(top_srcdir)/geom.cma
 
 .cmo.byte:
-	$(OCAMLC)   -package "$(REQUIRES)" -linkpkg $(OCAMLFLAGS) $^ -o $@
+	$(OCAMLC) -package "$(REQUIRES)" -I $(top_srcdir) geom.cma -linkpkg $(OCAMLFLAGS) $< -o $@
 
-.cmx.opt:
-	$(OCAMLOPT) -package "$(REQUIRES)" -linkpkg $(OCAMLOPTFLAGS) $^ -o $@
+.cmx.opt: $(top_srcdir)/geom.cmxa
+	$(OCAMLOPT) -package "$(REQUIRES)" -I $(top_srcdir) geom.cmxa -linkpkg $(OCAMLOPTFLAGS) $< -o $@
 
 clean-spec:
-	@rm -f $(PROGRAMS) $(PROGRAMS:.byte=.opt)
+	@rm -f $(PROGRAMS) $(PROGRAMS:.opt=.byte)
 
 -include .depend

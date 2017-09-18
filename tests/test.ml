@@ -1,10 +1,11 @@
 (* Test the shipped implementations. *)
-module G = Glop_impl.Glop2D
-module View = Glop_view.Make(G)
+module K = Algen_impl.FloatField
+module V = Algen_vector.Make (K) (struct let v = 2 end)
+module P = Geom_shapes.Point (V)
+module Color = Oaah_color.Make (K)
+module Img = Oaah_image.Make (Color)
 
-module P = Geom_shapes.Point (G.V)
-
-let make_point x y = [| G.K.of_float x ; G.K.of_float y |]
+let make_point x y = [| K.of_float x ; K.of_float y |]
 
 module Poly = Geom_shapes.Polygon (P)
 
@@ -101,36 +102,28 @@ let polys =
 		List.map (fun a -> let b = f !n a in incr n ; b) l in
 	list_mapi (fun n poly -> Algo.translate_poly poly (poly_pos n)) polys_list
 
-let draw_polys polys () =
-	let draw_single poly =
-		let varray = G.make_vertex_array (Poly.length poly) in
-		let idx = ref 0 in
-		Poly.iter (fun point -> G.vertex_array_set varray !idx point ; incr idx) poly ;
-		G.render G.Line_loop varray (G.Uniq G.white) in
-	List.iter draw_single polys
+let draw_polys polys =
+  let image = Img.make ~default:Color.white 800 600 in
+  (* So far we have polys in between -10 and 10. Move them in the image: *)
+  let polys = Algo.scale_poly polys [|0.;0.|] 40. in
+  let polys = Algo.translate_poly polys [| 400.; 300. |] in
+  Algo.rasterize polys (Img.poke_scanline image Color.black) ;
+  Img.open_graph image ;
+  Img.draw image ;
+  ignore (Graphics.(wait_next_event [Button_down; Key_pressed])) ;
+  Graphics.close_graph ()
 
 (* Display something *)
 
 let () =
-	let painters =
-		let to_draw =
-			(* Raw version *)
-			polys @
-			(* Monotonization *)
-			(List.map (fun poly -> Algo.monotonize (Algo.translate_poly poly [| G.K.zero ; G.K.of_int (-3) ; G.K.zero |])) polys) @
-			(* Triangulation *)
-			(List.map (fun poly -> Algo.triangulate (Algo.translate_poly poly [| G.K.zero ; G.K.of_int (-6) ; G.K.zero |])) polys)
-			(* Convex partition *)
-			(* (List.map (fun poly -> Algo.convex_partition (Algo.translate_poly poly [| G.K.zero ; G.K.of_int (-3) ; G.K.zero |])) polys) *)
-		in
-		(fun () ->
-			G.set_modelview G.M.id ;
-			G.mult_modelview (G.M.translate G.K.zero G.K.zero (G.K.neg G.K.one)) ;
-			G.mult_modelview (G.M.scale (G.K.of_float 0.15) (G.K.of_float 0.15) (G.K.one))) ::
-		(fun () ->
-			let bg_color = [| G.K.of_float 0.1 ; G.K.of_float 0.1 ; G.K.of_float 0.5 |] in
-			G.clear ~color:bg_color ()) ::
-		(List.map draw_polys to_draw) in
-
-	View.display painters
-
+  let to_draw =
+    (* Raw version *)
+    polys @
+    (* Monotonization *)
+    (List.map (fun poly -> Algo.monotonize (Algo.translate_poly poly [| K.zero ; K.of_int (-3) ; K.zero |])) polys) @
+    (* Triangulation *)
+    (List.map (fun poly -> Algo.triangulate (Algo.translate_poly poly [| K.zero ; K.of_int (-6) ; K.zero |])) polys)
+    (* Convex partition *)
+    (* (List.map (fun poly -> Algo.convex_partition (Algo.translate_poly poly [| K.zero ; K.of_int (-3) ; K.zero |])) polys) *)
+  in
+  draw_polys (List.concat to_draw)

@@ -33,7 +33,7 @@ libft2.a: $(C_SOURCES:.c=.o)
 	$(AR) rcs $@ $^
 
 $(ARCHIVE): $(ML_OBJS) libft2.a
-	$(OCAMLC)   -package "$(REQUIRES)" -custom -linkpkg $(OCAMLFLAGS) $(ML_OBJS) $(LIBS) -a -o $@
+	$(OCAMLC)   -package "$(REQUIRES)" -custom $(OCAMLFLAGS) $(ML_OBJS) $(LIBS) -a -o $@
 
 $(XARCHIVE): $(ML_XOBJS) libft2.a
 	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $(ML_XOBJS) $(LIBS) -a -o $@
@@ -51,8 +51,8 @@ uninstall:
 reinstall: uninstall install
 
 check: $(ARCHIVE) $(XARCHIVE)
-	$(MAKE) -C tests all opt
-	@for t in tests/*.byte tests/*.opt ; do $$t ; done
+	$(MAKE) -C tests
+	@for t in tests/*.opt ; do $$t ; done
 	@echo Ok
 
 clean-spec:
