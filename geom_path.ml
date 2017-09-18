@@ -176,64 +176,6 @@ struct
     in
     if not (is_empty path) then aux path.start path.edges
 
-  let map_edges f path =
-    let rec list_last = function
-      | [] -> raise Not_found
-      | [x] -> x
-      | _::rest -> list_last rest in
-    (* Move prev_stop, last prev_ctrls next_start and first next_ctrls
-     * to make prev_stop and next_start equal: *)
-    let connect prev_start (prev_stop, prev_ctrls, _)
-                next_start (next_stop, next_ctrls, _) =
-      if not (Point.eq prev_stop next_start) then (
-        let inters =
-          match Point.intersection prev_start prev_stop
-                                   next_start next_stop with
-          | None ->
-            (* No intersection. Arbitrarily, let's move the next point
-             * at the location of the previous one: *)
-            prev_stop
-          | Some i -> i in
-        let prev_mv = inters -~ prev_stop in
-        Point.copyi prev_stop inters ;
-        (match list_last prev_ctrls with
-        | exception Not_found -> ()
-        | ctrl -> Point.addi ctrl prev_mv) ;
-        let next_mv = inters -~ next_start in
-        Point.copyi next_start inters ;
-        (match List.hd next_ctrls with
-        | exception Failure _ -> ()
-        | ctrl -> Point.addi ctrl next_mv)
-      ) in
-    let rec aux start prev (* prev_edge, (* from path *),
-                              prev_start',
-                              prev_edge', (* from path' *),
-                              path', optional *) = function
-      | [] ->
-        (match prev with
-        | Some (prev_start', prev_edge', path') ->
-          if is_closed path then (
-            let next_edges' = List.hd path'.edges in
-            connect prev_start' prev_edge' path'.start next_edges') ;
-          path'
-        | None -> assert false (* path was not empty *))
-      | (stop, ctrls, interp) :: e' ->
-        let start', stop', ctrls', interp' =
-          f start stop ctrls interp in
-        let edge' = stop', ctrls', interp' in
-        let path' =
-          match prev with
-          | Some (prev_start', prev_edge', path') ->
-            (* Connect will modify prev_edges' and ctrls' *)
-            connect prev_start' prev_edge' start' edge' ;
-            path'
-          | None ->
-            empty start' in
-        let path' = extend stop' ctrls' interp' path' in
-        aux stop' (Some (start', edge', path')) e'
-    in
-    if is_empty path then path else aux path.start None path.edges
-
   let map_pts f path =
     let edges =
       List.map (fun (stop, ctrls, interp) ->

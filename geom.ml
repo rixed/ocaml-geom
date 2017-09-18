@@ -158,17 +158,6 @@ sig
 
   val iter_edges : t -> (point -> point -> unit) -> unit
 
-  (* Map all the edges (start, stop, control points, interpolator)
-   * into a new edge of a new path. If two successive edges are not
-   * connected any more, [map_edges] will connect them by moving those
-   * points to the intersection of those edges. If the path was closed,
-   * the same technique will be used to close the resulting path,
-   * otherwise the path extremities won't be connected.
-   * If the given path is empty, returns it unchanged. *)
-  val map_edges : (point -> point -> point list -> interpolator ->
-                   point * point * point list * interpolator) ->
-                  t -> t
-
   (* Build another path which edges are given by the passed function,
    * computed form the edges of the given path. Notice both path will
    * have the same starting point. *)
