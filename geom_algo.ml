@@ -689,14 +689,21 @@ struct
       let rasterize_poly poly =
         let open K.Infix in
         let add_coverage p1 p2 =
-          (* both p1 and p2 are within the same pixel and not on the same
-           * border *)
-          let p = Point.center p1 p2 in (* so that p is not on a cell border *)
+          (* Both p1 and p2 are within the same pixel and not on the same
+           * border (unless they are on several border, aka in a corner, in
+           * which case they can share one) *)
+          let p = Point.center p1 p2 in (* so that p is not on a cell border,
+            or at least not in any of the borders specific to p1 and p2 (but
+            can be on their common border if p1 and p2 are on neighboring
+            corners, but that is OK) *)
           let idx = y_to_idx p.(1) in
           (* cover will be > 0 if we are going down (decreasing Y), ie.
            * the poly is on the right side of that pixel. *)
           let cover = p1.(1) -~ p2.(1) in
-          let cell_end_x = K.ceil p.(0) in
+          (* If we took the ceil, then that would not give the end of
+           * that pixel in the case where all of p1, p2 and p lie on
+           * the left pixel border: *)
+          let cell_end_x = K.floor (K.succ p.(0)) in
           let area = cover *~ (cell_end_x -~ p.(0)) in
           cells_arr.(idx) <-
             { x = K.to_int p.(0) ; cover ; area } :: cells_arr.(idx) in
@@ -708,21 +715,23 @@ struct
           let next_nd = p1.(nd) +~ nd_diff in
           Array.init 2 (fun i -> if i = d then next_d else next_nd) in
         let clip_in_dir d p1 p2 =
-          if K.compare p1.(d) p2.(d) <= 0 then (
+          match K.compare p1.(d) p2.(d) with
+          | -1 ->
             let next_d = K.ceil p1.(d) in
             let next_d = if K.compare next_d p1.(d) = 0 then
               K.add next_d K.one else next_d in
             if K.compare p2.(d) next_d > 0 then
               do_clip p1 p2 d next_d
             else p2
-          ) else (
+          | 1 ->
             let next_d = K.floor p1.(d) in
             let next_d = if K.compare next_d p1.(d) = 0 then
               K.sub next_d K.one else next_d in
             if K.compare p2.(d) next_d < 0 then
               do_clip p1 p2 d next_d
             else p2
-          ) in
+          | _ -> p2
+        in
         let rec add_edge p1 p2 =
           if Point.compare p1 p2 <> 0 then (
             let p' = clip_in_dir 0 p1 p2 in
