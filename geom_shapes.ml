@@ -54,13 +54,13 @@ struct
 
   let determinant a b c d = (a *~ d) -~ (b *~ c)
 
-  let intersection p0 p1 q0 q1 =
+  let intersection ?(epsilon=K.of_float 1e-8) p0 p1 q0 q1 =
     let x1 = p0.(0) and y1 = p0.(1)
     and x2 = p1.(0) and y2 = p1.(1)
     and x3 = q0.(0) and y3 = q0.(1)
     and x4 = q1.(0) and y4 = q1.(1) in
     let den = determinant (x1 -~ x2) (y1 -~ y2) (x3 -~ x4) (y3 -~ y4) in
-    if den =~ K.zero then None else
+    if K.abs den <=~ epsilon then None else
     let det1 = determinant x1 y1 x2 y2
     and det2 = determinant x3 y3 x4 y4 in
     Some [|
@@ -118,21 +118,19 @@ struct
     let pp = Point.print in
     let connect prev_start prev_stop
                 next_start next_stop =
-      if not (Point.eq prev_stop next_start) then (
-        let inters =
-          match Point.intersection prev_start prev_stop
+      if Point.eq prev_stop next_start then true else (
+          (* Do not try hard to use the intersection if it's too far away.
+           * In that case we'd rather draw a nice and clean straight line
+           * in between prev_stop and next_start: *)
+          match Point.intersection ~epsilon:(Point.K.of_float 0.5)
+                                   prev_start prev_stop
                                    next_start next_stop with
-          | None ->
-            (* No intersection. Arbitrarily, let's move the next point
-             * at the location of the previous one. TODO: instead, what
-             * we want is to create a new edge joining prev and next.
-             * For instance, this fails with flat polys made of only 2
-             * edges. *)
-            prev_stop
-          | Some i -> i in
-        Point.copyi prev_stop inters ;
-        Point.copyi next_start inters ;
-        Format.printf "Moved prev_stop and next_start to %a@." pp inters
+          | None -> false
+          | Some inters ->
+            Point.copyi prev_stop inters ;
+            Point.copyi next_start inters ;
+            Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
+            true
       ) in
     let p =
       fold_leftr (fun p t ->
@@ -146,8 +144,12 @@ struct
             insert_after (insert_after p start') stop'
           ) else (
             let prev_stop = get p and prev_start = get (prev p) in
-            connect prev_start prev_stop start' stop' ;
-            insert_after p stop'
+            if connect prev_start prev_stop start' stop' then
+              insert_after p stop'
+            else
+              (* No intersection? Let's just keep all our points as they
+               * are. *)
+              insert_after (insert_after p start') stop'
           )
         ) empty t in
     (* We haven't "connected" the first and the last points.
@@ -156,11 +158,15 @@ struct
      * we have one extra point): *)
     let prev_start = get (prev p) and prev_stop = get p
     and next_start = get (next p) and next_stop = get (next (next p)) in
-    connect prev_start prev_stop next_start next_stop ;
-    (* So now prev_stop and next_start have been moved to the same
-     * position, and we must get rid of one of them. We remove prev_stop
-     * so we end up with the cursor on the starting point, which is nice:*)
-    remove p
+    if connect prev_start prev_stop next_start next_stop then
+      (* So now prev_stop and next_start have been moved to the same
+       * position, and we must get rid of one of them. We remove prev_stop so
+       * we end up with the cursor on the starting point, which is nice:*)
+      remove p
+    else
+      (* We failed to connect? Simply keep both of them then! But still,
+       * let's focus on the starting point: *)
+      next p
 
   let translate t v =
     map (fun p -> Point.add p v) t

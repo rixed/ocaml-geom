@@ -88,12 +88,13 @@ let polys =
     |] ] ;
     [ square ; Algo.reverse_single (Algo.scale_single_poly square P.zero (K.of_float 0.5)) ] ;
     [ Algo.poly_of_path (P.K.of_float 0.2) test_path ] ;
+    [ Algo.line_of_path ~width:(P.K.of_float 0.2) ~res:(P.K.of_float 0.1) test_path ] ;
     letter_a ;
     List.map (Algo.inflate (P.K.of_float 0.1)) letter_a
   ] in
   let poly_pos n =
     let nb_polys = List.length polys_list in
-    let poly_size = 2.1 in
+    let poly_size = 2.0 in
     let x = n mod nb_polys in
     let y = n / nb_polys in
     [| K.of_float (float_of_int (x - nb_polys/2) *. poly_size) ;

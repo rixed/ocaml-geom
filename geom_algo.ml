@@ -310,7 +310,8 @@ struct
            Point.eq (Poly.get (Poly.next !poly)) pt)
       then
         poly := Poly.insert_after !poly pt) ;
-    !poly
+    (* Returns with focus on the path starting point: *)
+    Poly.next !poly
 
   let polys_of_paths res paths =
     List.map (poly_of_path res) paths

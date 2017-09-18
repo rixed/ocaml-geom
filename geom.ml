@@ -20,8 +20,10 @@ sig
   val intersect : ?closed:bool -> t -> t -> t -> t -> bool
 
   (** [intersection p1 p2 q1 q2] returns the location of the intersection
-   * of lines (p0, p1) and (q1, q2), or None if they do not intersect. *)
-  val intersection : t -> t -> t -> t -> t option
+   * of lines (p0, p1) and (q1, q2), or None if they do not intersect
+   * (epsilon controls how small the determinant is allowed to be before
+   * considering the lines are parallel. *)
+  val intersection : ?epsilon:K.t -> t -> t -> t -> t -> t option
 
   val copy : t -> t
 
