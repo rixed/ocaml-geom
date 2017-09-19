@@ -35,7 +35,7 @@ let draw_polys =
       let p = [| K.of_int e.mouse_x; K.of_int e.mouse_y |] in
       let ins = Poly.is_inside (List.hd polys) p in
       Format.printf "%a %a -> %s@." K.print p.(0) K.print p.(1) (if ins then "inside" else "outside") ;
-      event_loop ()
+      if not ins then event_loop ()
     ) in
   event_loop () ;
   close_graph ()
