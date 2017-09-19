@@ -23,8 +23,8 @@ let draw_polys =
   let polys = [ box ] in
   let image = Img.make ~default:Color.white 800 600 in
   (* So far we have polys in between -10 and 10. Move them in the image: *)
-  let polys = Algo.scale_poly polys [|0.;0.|] 20. in
-  let polys = Algo.translate_poly polys [| 300.; 250. |] in
+  let polys = Algo.scale_poly 20. polys in
+  let polys = Algo.translate_poly [| 300.; 250. |] polys in
   Algo.rasterize polys (Img.poke_scanline image Color.black) ;
   Img.open_graph image ;
   Img.draw image ;

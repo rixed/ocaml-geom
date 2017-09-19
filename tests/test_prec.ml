@@ -11,8 +11,8 @@ module Algo = Geom_algo.Algorithms (Poly) (Path)
 let draw_polys polys =
   let image = Img.make ~default:Color.white 800 600 in
   (* So far we have polys in between -10 and 10. Move them in the image: *)
-  let polys = Algo.scale_poly polys [|0.;0.|] 4. in
-  let polys = Algo.translate_poly polys [| 400.; 300. |] in
+  let polys = Algo.scale_poly 4. polys in
+  let polys = Algo.translate_poly [| 400.; 300. |] polys in
   Algo.rasterize polys (Img.poke_scanline image Color.black) ;
   Img.open_graph image ;
   Img.draw image ;
@@ -32,6 +32,6 @@ let () =
 			build_ppolys ppolys (step - 1) res pos
 		else ppolys in
 	build_ppolys [] 7 (K.of_float 8.) [| ~-.70.; 0. |] |>
-  List.map (fun (pos, polys) -> Algo.translate_poly polys pos) |>
+  List.map (fun (pos, polys) -> Algo.translate_poly pos polys) |>
   List.concat |>
   draw_polys

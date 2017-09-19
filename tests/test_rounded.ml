@@ -11,8 +11,8 @@ module Img = Oaah_image.Make (Color)
 let draw_poly polys =
   let image = Img.make ~default:Color.white 800 600 in
   (* Zoom: *)
-  let polys = Algo.scale_poly polys [|0.;0.|] 10. in
-  let polys = Algo.translate_poly polys [| 400.; 300. |] in
+  let polys = Algo.scale_poly 10. polys in
+  let polys = Algo.translate_poly [| 400.; 300. |] polys in
   Algo.rasterize polys (Img.poke_scanline image Color.black) ;
   Img.open_graph image ;
   Img.draw image ;
@@ -31,6 +31,6 @@ let letters_view =
 		let res = K.of_float 0.01 in
 		pos, Algo.polys_of_paths ~res paths)
     [ 0.1, -15. ; 1., 0. ; 2.5, 15. ] |>
-  List.map (fun (pos, polys) -> Algo.translate_poly polys pos) |>
+  List.map (fun (pos, polys) -> Algo.translate_poly pos polys) |>
   List.concat |>
   draw_poly

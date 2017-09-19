@@ -69,12 +69,12 @@ struct
     let add_pos p (n, _, _) = p +~ n in
     Point.mul (Point.K.inv (Point.K.of_int (length path))) (List.fold_left add_pos path.start path.edges)
 
-  let scale ~center scale path =
-    let scale_me p = center +~ (Point.mul scale (Point.sub p center)) in
+  let scale ?center scale path =
+    let scale_me = Point.scale ?center scale in
     let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
     { start = scale_me path.start ; edges = List.map edge_scale path.edges }
 
-  let scale_along ~center ~axis ratio path =
+  let scale_along ?(center=Point.origin) ~axis ratio path =
     let scale_me p =
       (* decompose vector from center to p as one vector along axis and one perpendicular component. *)
       let t = Point.sub p center in
@@ -251,7 +251,7 @@ struct
     let rounded_single path = aux path (empty path.start) path.start path.edges in
     List.map rounded_single paths
 
-  let circle ~radius center =
+  let circle ?(center=Point.origin) radius =
     let l = Point.K.one and o = Point.K.zero
     and c = Point.K.of_float 0.55191502449 in
     let _l = Point.K.neg l and _o = Point.K.neg o
@@ -261,7 +261,7 @@ struct
     bezier_to [| _l;o |] [ [|_c;l|]; [|_l;c|] ] |>
     bezier_to [| o;_l |] [ [|_l;_c|]; [|_c;_l|] ] |>
     bezier_to [| l;o |] [ [|c;_l|]; [|l;_c|] ] |>
-    scale ~center:Point.origin radius |>
+    scale radius |>
     translate center
 end
 
@@ -280,7 +280,7 @@ struct
     and corner11 = [| corner00.(0) ; corner10.(1) |] in
     (empty corner00) -- corner01 -- corner10 -- corner11 -- corner00
 
-  let rectangle_of_size center width height =
+  let rectangle_of_size ?(center=Point.origin) width height =
     let diag = [| K.half width ; K.half height |] in
     let corner00 = Point.sub center diag
     and corner10 = Point.add center diag in

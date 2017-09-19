@@ -73,6 +73,12 @@ struct
   let center p1 p2 =
     let p = add p1 p2 in
     mul (K.half K.one) p
+
+  let scale ?center ratio p =
+    match center with
+    | None -> mul ratio p
+    | Some c ->
+      add c (mul ratio (sub p c))
 end
 
 module Polygon
@@ -173,6 +179,9 @@ struct
 
   let translate v t =
     map (fun p -> Point.add p v) t
+
+  let scale ?center ratio poly =
+    map (Point.scale ?center ratio) poly
 
   module IsInside = Geom.MakeIsInside (Point.K)
   let is_inside t point =

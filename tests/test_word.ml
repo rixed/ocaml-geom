@@ -12,8 +12,8 @@ module Word = Text_impl.Word (Glyph)
 let draw_polys polys =
   let image = Img.make ~default:Color.white 800 600 in
   (* So far we have polys in between -10 and 10. Move them in the image: *)
-  let polys = Algo.scale_poly polys [|0.;0.|] 4. in
-  let polys = Algo.translate_poly polys [| 400.; 300. |] in
+  let polys = Algo.scale_poly 4. polys in
+  let polys = Algo.translate_poly [| 400.; 300. |] polys in
   Algo.rasterize polys (Img.poke_scanline image Color.black) ;
   Img.open_graph image ;
   Img.draw image ;
@@ -23,7 +23,7 @@ let draw_polys polys =
 let word_polys =
   let word = Word.make "T.AVO" in
   Word.to_polys ~res:K.one word |>
-  List.map (fun (pos, polys) -> Algo.translate_poly polys pos) |>
+  List.map (fun (pos, polys) -> Algo.translate_poly pos polys) |>
   List.concat
 
 let () =

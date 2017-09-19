@@ -50,9 +50,6 @@ struct
 
   let debug = true
 
-  let scale_point point center ratio =
-    Point.add center (Point.mul ratio (Point.sub point center))
-
   let next_pt p = Poly.get (Poly.next p)
   let prev_pt p = Poly.get (Poly.prev p)
 
@@ -284,22 +281,10 @@ struct
 
   let reverse_paths paths = List.map Path.reverse paths
 
-  let transform poly f =
-    let new_poly = ref Poly.empty in
-    Poly.iterr (fun p ->
-      new_poly := Poly.insert_after !new_poly (f (Poly.get p))) poly ;
-    !new_poly
+  let translate_poly vec polys = List.map (Poly.translate vec) polys
 
-  let translate_single_poly poly vec =
-    transform poly (fun point -> Point.add point vec)
-
-  let translate_poly polys vec = List.map (fun p -> translate_single_poly p vec) polys
-
-  let scale_single_poly poly center ratio =
-    transform poly (fun point -> scale_point point center ratio)
-
-  let scale_poly polys center ratio =
-    List.map (fun p -> scale_single_poly p center ratio) polys
+  let scale_poly ?center ratio polys =
+    List.map (Poly.scale ?center ratio) polys
 
   let poly_of_path ~res path =
     let poly = ref Poly.empty in

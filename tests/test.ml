@@ -32,9 +32,8 @@ let test_path =
 
 let letter_a =
   Algo.scale_poly
-    (Glyph.to_polys ~res:(K.of_float 1.2) (Glyph.make 'a'))
-    P.zero
     (K.of_float 0.1)
+    (Glyph.to_polys ~res:(K.of_float 1.2) (Glyph.make 'a'))
 
 let polys =
   let polys_list = [
@@ -86,10 +85,10 @@ let polys =
       make_point (-0.7) 1. ;  (* 20 *)
       make_point (-1.) 0.7
     |] ] ;
-    [ square ; Algo.reverse_single (Algo.scale_single_poly square P.zero (K.of_float 0.5)) ] ;
+    [ square ; Algo.reverse_single (Poly.scale (K.of_float 0.5) square) ] ;
     [ Algo.poly_of_path ~res:(P.K.of_float 0.2) test_path ] ;
     [ Algo.line_of_path ~width:(P.K.of_float 0.2) ~res:(P.K.of_float 0.1) test_path ] ;
-    [ Path.circle ~radius:P.K.one P.origin |>
+    [ Path.circle P.K.one |>
       Algo.poly_of_path ~res:(P.K.of_float 0.2) ] ;
     letter_a ;
     List.map (Algo.inflate (P.K.of_float 0.1)) letter_a
@@ -104,13 +103,13 @@ let polys =
   let list_mapi f l =
     let n = ref 0 in
     List.map (fun a -> let b = f !n a in incr n ; b) l in
-  list_mapi (fun n poly -> Algo.translate_poly poly (poly_pos n)) polys_list
+  list_mapi (fun n poly -> Algo.translate_poly (poly_pos n) poly) polys_list
 
 let draw_polys polys =
   let image = Img.make ~default:Color.white 800 600 in
   (* So far we have polys in between -10 and 10. Move them in the image: *)
-  let polys = Algo.scale_poly polys [|0.;0.|] 40. in
-  let polys = Algo.translate_poly polys [| 400.; 300. |] in
+  let polys = Algo.scale_poly 40. polys in
+  let polys = Algo.translate_poly [| 400.; 300. |] polys in
   Algo.rasterize polys (Img.poke_scanline image Color.black) ;
   Img.open_graph image ;
   Img.draw image ;
@@ -124,10 +123,10 @@ let () =
     (* Raw version *)
     polys @
     (* Monotonization *)
-    (List.map (fun poly -> Algo.monotonize (Algo.translate_poly poly [| K.zero ; K.of_int (-3) ; K.zero |])) polys) @
+    (List.map (fun poly -> Algo.monotonize (Algo.translate_poly [| K.zero ; K.of_int (-3) ; K.zero |] poly)) polys) @
     (* Triangulation *)
-    (List.map (fun poly -> Algo.triangulate (Algo.translate_poly poly [| K.zero ; K.of_int (-6) ; K.zero |])) polys)
+    (List.map (fun poly -> Algo.triangulate (Algo.translate_poly [| K.zero ; K.of_int (-6) ; K.zero |] poly)) polys)
     (* Convex partition *)
-    (* (List.map (fun poly -> Algo.convex_partition (Algo.translate_poly poly [| K.zero ; K.of_int (-3) ; K.zero |])) polys) *)
+    (* (List.map (fun poly -> Algo.convex_partition (Algo.translate_poly [| K.zero ; K.of_int (-3) ; K.zero |] poly)) polys) *)
   in
   draw_polys (List.concat to_draw)

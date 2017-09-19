@@ -41,6 +41,8 @@ sig
   val turn_left : t -> t
 
   val turn_right : t -> t
+
+  val scale : ?center:t -> K.t -> t -> t
 end
 
 module type POINT_SET =
@@ -79,6 +81,7 @@ sig
 
   val is_inside     : t -> Point.t -> bool
   val translate     : Point.t (* Should be vector *) -> t -> t
+  val scale         : ?center:Point.t -> Point.K.t -> t -> t
   val print         : Format.formatter -> t -> unit
 end
 
@@ -125,7 +128,7 @@ sig
   val bezier_to : point -> (point list) -> t -> t
 
   (** Approximate a circle using 4 bezier quadratic curves *)
-  val circle : radius:Point.K.t -> Point.t -> t
+  val circle : ?center:Point.t -> Point.K.t -> t
 
   (** Build a path composed of the first one followed by the second one.
    * They are joint in such a way that the last point of the first path
@@ -150,10 +153,10 @@ sig
   val center : t -> point
 
   (** Scale a path relatively to a point. *)
-  val scale : center:point -> Point.K.t -> t -> t
+  val scale : ?center:point -> Point.K.t -> t -> t
 
   (** Scale a path along a given axis. *)
-  val scale_along : center:point -> axis:point -> Point.K.t -> t -> t
+  val scale_along : ?center:point -> axis:point -> Point.K.t -> t -> t
 
   (** Returns only that part of the path that is on the left of the given
    * line. This can of course return 0, 1 or more paths. *)
@@ -215,10 +218,8 @@ sig
   val reverse_single : Poly.t -> Poly.t
   val reverse_paths : Path.t list -> Path.t list
   val simplify : Poly.t list -> Poly.t
-  val translate_poly : Poly.t list -> Poly.Point.t -> Poly.t list
-  val translate_single_poly : Poly.t -> Poly.Point.t -> Poly.t
-  val scale_poly : Poly.t list -> Poly.Point.t -> Poly.Point.K.t -> Poly.t list
-  val scale_single_poly : Poly.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.t
+  val translate_poly : Poly.Point.t -> Poly.t list -> Poly.t list
+  val scale_poly : ?center:Poly.Point.t -> Poly.Point.K.t -> Poly.t list -> Poly.t list
 
   (** Close the path if not already, and convert it to a Polygon: *)
   val poly_of_path : res:Path.Point.K.t -> Path.t -> Poly.t
@@ -242,7 +243,6 @@ sig
   (* TODO: a flag to forbid moving toward [-dir] *)
   val fall_on : dir:Poly.Point.t -> Poly.t -> Poly.t -> Poly.t
 
-  val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.Point.t
   val bbox_single_poly : Poly.t -> Poly.Point.Bbox.t
   val bbox : Poly.t list -> Poly.Point.Bbox.t
 
