@@ -124,6 +124,9 @@ sig
   val straight_to : point -> t -> t
   val bezier_to : point -> (point list) -> t -> t
 
+  (** Approximate a circle using 4 bezier quadratic curves *)
+  val circle : radius:Point.K.t -> Point.t -> t
+
   (** Build a path composed of the first one followed by the second one.
    * They are joint in such a way that the last point of the first path
    * becomes (and replaces) the starting point of the second one (without

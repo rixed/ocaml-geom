@@ -250,6 +250,19 @@ struct
         aux path path' d2 ((stop2, ctrls2, interp2)::edges) in
     let rounded_single path = aux path (empty path.start) path.start path.edges in
     List.map rounded_single paths
+
+  let circle ~radius center =
+    let l = Point.K.one and o = Point.K.zero
+    and c = Point.K.of_float 0.55191502449 in
+    let _l = Point.K.neg l and _o = Point.K.neg o
+    and _c = Point.K.neg c in
+    empty [| l;o |] |>
+    bezier_to [| o;l |] [ [|l;c|]; [|c;l|] ] |>
+    bezier_to [| _l;o |] [ [|_c;l|]; [|_l;c|] ] |>
+    bezier_to [| o;_l |] [ [|_l;_c|]; [|_c;_l|] ] |>
+    bezier_to [| l;o |] [ [|c;_l|]; [|l;_c|] ] |>
+    scale ~center:Point.origin radius |>
+    translate center
 end
 
 module Draw (Path : Geom.PATH) =
