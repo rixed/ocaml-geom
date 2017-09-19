@@ -85,7 +85,7 @@ let polys =
       make_point (-0.7) 1. ;  (* 20 *)
       make_point (-1.) 0.7
     |] ] ;
-    [ square ; Algo.reverse_single (Poly.scale (K.of_float 0.5) square) ] ;
+    [ square ; Algo.reverse_single (Poly.scale (K.of_float 0.5) square) |> Poly.rotate (K.of_float 0.2) ] ;
     [ Algo.poly_of_path ~res:(P.K.of_float 0.2) test_path ] ;
     [ Algo.line_of_path ~width:(P.K.of_float 0.2) ~res:(P.K.of_float 0.1) test_path ] ;
     [ Path.circle P.K.one |>

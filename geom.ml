@@ -82,6 +82,7 @@ sig
   val is_inside     : t -> Point.t -> bool
   val translate     : Point.t (* Should be vector *) -> t -> t
   val scale         : ?center:Point.t -> Point.K.t -> t -> t
+  val rotate        : ?center:Point.t -> Point.K.t -> t -> t
   val print         : Format.formatter -> t -> unit
 end
 

@@ -183,6 +183,16 @@ struct
   let scale ?center ratio poly =
     map (Point.scale ?center ratio) poly
 
+  let rotate ?(center=Point.origin) ang poly =
+    let c = Point.K.(of_float (cos (to_float ang)))
+    and s = Point.K.(of_float (sin (to_float ang))) in
+    map (fun p ->
+      let open Point.K.Infix in
+      let p = Point.sub p center in
+      let p = [| c *~ p.(0) -~ s *~ p.(1) ;
+                 s *~ p.(0) +~ c *~ p.(1) |] in
+      Point.add p center) poly
+
   module IsInside = Geom.MakeIsInside (Point.K)
   let is_inside t point =
     IsInside.is_inside (iter_edges t) point
