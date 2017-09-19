@@ -333,6 +333,39 @@ struct
     poly_of_path ~res |>
     inflate (K.half width)
 
+  let fall_on ~dir target p =
+    (* Project target into a line perpendicular to dir: *)
+    let pdir = Point.turn_right dir in
+    let target_proj = Poly.map (Point.scalar_product pdir) target in
+    (* Now for all edges proj that contain p proj, compute the
+     * actual intersection and keep the shortest one. Note than it
+     * does not matter which side of dir the intersection is. *)
+    let pproj = Point.scalar_product pdir (Poly.get p) in
+    match
+      Poly.fold_leftr (fun (min_opt, tproj) targ ->
+          let open K.Infix in
+          let d0 = pproj -~ Poly.get tproj
+          and d1 = Poly.(get (next tproj) -~ get tproj) in
+          (if d1 =~ K.zero then min_opt else
+            let r = d0 /~ d1 in
+            if r <~ K.zero || r >~ K.one then min_opt else (
+              let open Point.Infix in
+              let inter =
+                Point.mul r Poly.(get (next targ) -~ get targ) in
+              let dist = Point.distance2 inter (Poly.get p) in
+              match min_opt with
+              | None -> Some (inter, dist)
+              | Some (_, min_dist) ->
+                if K.compare dist min_dist < 0 then Some (inter, dist)
+                else min_opt
+            )
+          ), Ring_impl.Ring.next tproj
+        ) (None, target_proj) target with
+    | None, _ ->
+      p (* Don't move then *)
+    | Some (inter, _), _ ->
+      Poly.translate Point.Infix.(inter -~ (Poly.get p)) p
+
   module Monotonizer =
   struct
     type vertex_kind =

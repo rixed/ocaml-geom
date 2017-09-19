@@ -16,6 +16,10 @@ sig
   val compare_x : t -> t -> int
   val compare_y : t -> t -> int
 
+  (* Compute the distance between the two given points *)
+  val distance2 : t -> t -> K.t
+  val distance : t -> t -> K.t
+
   (* Quickly tells if the two lines/segments intersects *)
   val intersect : ?closed:bool -> t -> t -> t -> t -> bool
 
@@ -60,7 +64,7 @@ end
 module type POLYGON =
 sig
   module Point : POINT
-  type 'a ring
+  type 'a ring = 'a Ring_impl.Ring.t
   include Pfds_intf.RING_GEN with type 'a t := 'a ring
   type t = Point.t ring
 
@@ -227,6 +231,13 @@ sig
 
   (** Move each edge of a poly away (on the right) by a given distance: *)
   val inflate : Path.Point.K.t -> Poly.t -> Poly.t
+
+  (** [fall_on ~dir p1 p2] returns a polygon that's a translated version
+   * of [p2] in the direction given by [dir] (or [-dir]) for its focused
+   * point to reach [p1]. If [p1] is not in that direction, then returns
+   * [p2]. *)
+  (* TODO: a flag to forbid moving toward [-dir] *)
+  val fall_on : dir:Poly.Point.t -> Poly.t -> Poly.t -> Poly.t
 
   val scale_point : Poly.Point.t -> Poly.Point.t -> Poly.Point.K.t -> Poly.Point.t
   val bbox_single_poly : Poly.t -> Poly.Point.Bbox.t

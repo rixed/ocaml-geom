@@ -4,8 +4,8 @@ OCAMLOPT   = ocamlfind ocamlopt -g
 OCAMLDEP   = ocamlfind ocamldep
 OCAMLMKTOP = ocamlfind ocamlmktop -g
 INCS       =
-OCAMLOPTFLAGS += $(INCS) -w Ae -g -annot
-OCAMLFLAGS    += $(INCS) -w Ae -g -annot
+OCAMLOPTFLAGS += $(INCS) -w Ae-44 -g -annot
+OCAMLFLAGS    += $(INCS) -w Ae-44 -g -annot
 
 CAMLINCLUDE = $(shell ocamlfind printconf stdlib)
 CPPFLAGS += -I $(CAMLINCLUDE) -I .

@@ -34,6 +34,9 @@ struct
   
   let compare_y = compare_coord 1
 
+  let distance2 p0 p1 = norm2 Infix.(p1 -~ p0)
+  let distance p0 p1 = K.sqrt (distance2 p0 p1)
+
   let intersect ?(closed=true) p0 p1 q0 q1 =
     let (^^) a b = (* Exclusive logical or *)
       if a then not b else b in
