@@ -691,7 +691,7 @@ struct
 
   type coverage_cell = { x : int ; cover : K.t ; area : K.t }
 
-  let rasterize polys f =
+  let rasterize f polys =
     (* We first build an array of ordered lists of cells (one for each scan
      * line), where a cell is an x position and a coverage ratio (ie. a number
      * between -1 and 1).  We have cells only for interesting locations, ie

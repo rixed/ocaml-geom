@@ -25,7 +25,7 @@ let draw_polys =
   (* So far we have polys in between -10 and 10. Move them in the image: *)
   let polys = Algo.scale_poly 20. polys in
   let polys = Algo.translate_poly [| 300.; 250. |] polys in
-  Algo.rasterize polys (Img.poke_scanline image Color.black) ;
+  Algo.rasterize (Img.poke_scanline image Color.black) polys ;
   Img.open_graph image ;
   Img.draw image ;
   let open Graphics in

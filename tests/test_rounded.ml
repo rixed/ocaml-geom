@@ -13,7 +13,7 @@ let draw_poly polys =
   (* Zoom: *)
   let polys = Algo.scale_poly 10. polys in
   let polys = Algo.translate_poly [| 400.; 300. |] polys in
-  Algo.rasterize polys (Img.poke_scanline image Color.black) ;
+  Algo.rasterize (Img.poke_scanline image Color.black) polys ;
   Img.open_graph image ;
   Img.draw image ;
   ignore (Graphics.(wait_next_event [Button_down; Key_pressed])) ;

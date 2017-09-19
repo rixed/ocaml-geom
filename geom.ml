@@ -250,9 +250,9 @@ sig
   (* [rasterize polys fun] will call [fun x1 x2 y alpha] for every pixel of
    * the polygon *)
   (* FIXME: clipping in Y and X! *)
-  val rasterize : Poly.t list ->
-   (int (* x_start *) -> int (* x_stop *) -> int (* y *) -> Poly.Point.K.t (* alpha *) -> unit) ->
-    unit
+  val rasterize :
+    (int (* x_start *) -> int (* x_stop *) -> int (* y *) -> Poly.Point.K.t (* alpha *) -> unit) ->
+    Poly.t list -> unit
 
   (* Some utilities *)
   val path_of_points : Poly.Point.t list -> Path.t
