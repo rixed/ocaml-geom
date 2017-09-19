@@ -78,7 +78,7 @@ sig
   val map_edges     : (Point.t -> Point.t -> Point.t * Point.t) -> t -> t
 
   val is_inside     : t -> Point.t -> bool
-  val translate     : t -> Point.t (* should be vector *) -> t
+  val translate     : Point.t (* Should be vector *) -> t -> t
   val print         : Format.formatter -> t -> unit
 end
 

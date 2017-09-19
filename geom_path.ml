@@ -189,35 +189,35 @@ struct
     iter_edges path add_edge ;
     Point.K.half !s
 
-    module IsInside = Geom.MakeIsInside (Point.K)
-    let is_inside res path point =
-      let rec aux start edges f =
-        match edges with
-        | [] ->
-          if start != path.start then f start path.start
-        | (stop, [], _interp) :: edges' ->
-          f start stop ;
-          aux stop edges' f
-        | (stop, ctrls, interp) :: edges' ->
-          let bbox = Point.Bbox.make start in
-          let bbox = Point.Bbox.add bbox stop in
-          let bbox = List.fold_left Point.Bbox.add bbox ctrls in
-          (match bbox with
-          | Point.Bbox.Box ([| _xmi;ymi |], [| xma;yma |]) ->
-            if Point.K.compare point.(0) xma <= 0 &&
-               Point.K.compare point.(1) yma <= 0 &&
-               Point.K.compare point.(1) ymi >= 0
-            then ( (* iter on this edge *)
-              let last =
-                List.fold_left (fun prev next ->
-                    f prev next ;
-                    next
-                  ) start (interp start stop ctrls res) in
-                f last stop
-                )
-          | _ -> assert false) ;
-          aux stop edges' f in
-      IsInside.is_inside (aux path.start path.edges) point
+  module IsInside = Geom.MakeIsInside (Point.K)
+  let is_inside res path point =
+    let rec aux start edges f =
+      match edges with
+      | [] ->
+        if start != path.start then f start path.start
+      | (stop, [], _interp) :: edges' ->
+        f start stop ;
+        aux stop edges' f
+      | (stop, ctrls, interp) :: edges' ->
+        let bbox = Point.Bbox.make start in
+        let bbox = Point.Bbox.add bbox stop in
+        let bbox = List.fold_left Point.Bbox.add bbox ctrls in
+        (match bbox with
+        | Point.Bbox.Box ([| _xmi;ymi |], [| xma;yma |]) ->
+          if Point.K.compare point.(0) xma <= 0 &&
+             Point.K.compare point.(1) yma <= 0 &&
+             Point.K.compare point.(1) ymi >= 0
+          then ( (* iter on this edge *)
+            let last =
+              List.fold_left (fun prev next ->
+                  f prev next ;
+                  next
+                ) start (interp start stop ctrls res) in
+              f last stop
+              )
+        | _ -> assert false) ;
+        aux stop edges' f in
+    IsInside.is_inside (aux path.start path.edges) point
 
   let bbox path =
     let union_ctls bbox ctl = Point.Bbox.add bbox ctl in

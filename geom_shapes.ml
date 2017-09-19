@@ -8,7 +8,7 @@ struct
 
   let origin = zero
 
-  let area a b = K.sub (K.mul a.(0) b.(1)) (K.mul a.(1) b.(0))
+  let area a b = (a.(0) *~ b.(1)) -~ (a.(1) *~ b.(0))
 
   let compare_left p0 p1 p =
     let v0 = sub p1 p0 in
@@ -171,7 +171,7 @@ struct
        * let's focus on the starting point: *)
       next p
 
-  let translate t v =
+  let translate v t =
     map (fun p -> Point.add p v) t
 
   module IsInside = Geom.MakeIsInside (Point.K)
