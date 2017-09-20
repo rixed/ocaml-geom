@@ -32,8 +32,17 @@ XARCHIVE = $(NAME).cmxa
 libft2.a: $(C_SOURCES:.c=.o)
 	$(AR) rcs $@ $^
 
+%.cmo: %.ml
+	$(OCAMLC) -package "$(REQUIRES)" $(OCAMLFLAGS) -c $<
+
+%.cmi: %.mli
+	$(OCAMLC) -package "$(REQUIRES)" $(OCAMLFLAGS) -c $<
+
+%.cmx: %.ml
+	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) -c $<
+
 $(ARCHIVE): $(ML_OBJS) libft2.a
-	$(OCAMLC)   -package "$(REQUIRES)" -custom $(OCAMLFLAGS) $(ML_OBJS) $(LIBS) -a -o $@
+	$(OCAMLC) -package "$(REQUIRES)" -custom $(OCAMLFLAGS) $(ML_OBJS) $(LIBS) -a -o $@
 
 $(XARCHIVE): $(ML_XOBJS) libft2.a
 	$(OCAMLOPT) -package "$(REQUIRES)" $(OCAMLOPTFLAGS) $(ML_XOBJS) $(LIBS) -a -o $@
@@ -58,6 +67,7 @@ check: $(ARCHIVE) $(XARCHIVE)
 clean-spec:
 	$(MAKE) -C tests clean
 
-distclean: clean
+distclean-spec:
+	$(MAKE) -C tests distclean
 
 -include .depend
