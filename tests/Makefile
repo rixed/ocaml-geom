@@ -19,10 +19,10 @@ include $(top_srcdir)/make.common
 $(PROGRAMS): $(top_srcdir)/geom.cmxa
 $(PROGRAMS:.opt=.byte): $(top_srcdir)/geom.cma
 
-.cmo.byte:
+%.byte: %.cmo
 	$(OCAMLC) -package "$(REQUIRES)" -I $(top_srcdir) geom.cma -linkpkg $(OCAMLFLAGS) $< -o $@
 
-.cmx.opt: $(top_srcdir)/geom.cmxa
+%.opt: %.cmx $(top_srcdir)/geom.cmxa
 	$(OCAMLOPT) -package "$(REQUIRES)" -I $(top_srcdir) geom.cmxa -linkpkg $(OCAMLOPTFLAGS) $< -o $@
 
 clean-spec:
