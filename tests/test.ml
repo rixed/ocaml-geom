@@ -110,7 +110,7 @@ let draw_polys polys =
   (* So far we have polys in between -10 and 10. Move them in the image: *)
   let polys = Algo.scale_poly 40. polys in
   let polys = Algo.translate_poly [| 400.; 300. |] polys in
-  Algo.rasterize (Img.poke_scanline image Color.black) polys ;
+  Algo.rasterize (Img.poke_scanline image Color.black 1.) polys ;
   Img.open_graph image ;
   Img.draw image ;
   ignore (Graphics.(wait_next_event [Button_down; Key_pressed])) ;
