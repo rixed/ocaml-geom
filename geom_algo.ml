@@ -336,6 +336,7 @@ struct
             if r <~ K.zero || r >~ K.one then min_opt else (
               let open Point.Infix in
               let inter =
+                Poly.get targ +~
                 Point.mul r Poly.(get (next targ) -~ get targ) in
               let dist = Point.distance2 inter (Poly.get p) in
               match min_opt with
