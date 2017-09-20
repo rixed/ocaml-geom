@@ -774,9 +774,10 @@ struct
             f last.x last.x y last.area ;
             if K.compare K.zero last.cover != 0 then
               if debug then
-                Format.printf "bug: last cover = %a instead of 0@."
+                Format.printf "bug: last cover = %a instead of 0@.@!"
                   K.print last.cover ;
-            assert (K.compare (K.abs last.cover) (K.of_float 1e-10) = -1)
+            let epsilon = K.of_float 1e-10 in
+            assert (K.compare (K.abs last.cover) epsilon <= 0)
           | next::cells ->
             if last.x = next.x then
               (* merge the two cells and draw that instead: *)
