@@ -51,10 +51,12 @@ struct
 
   let length path = List.length path.edges
 
-  let translate disp path =
-    let edge_translate (p, ctrls, i) =
-      p +~ disp, List.map ((+~) disp) ctrls, i in
-    { start = path.start +~ disp ; edges = List.map edge_translate path.edges }
+  let map f path =
+    { start = f path.start ;
+      edges = List.map (fun (p, ctrls, i) ->
+        f p, List.map f ctrls, i) path.edges }
+
+  let translate disp = map ((+~) disp)
 
   let rec reverse path = match path.edges with
     | [] -> path
@@ -71,8 +73,7 @@ struct
 
   let scale ?center scale path =
     let scale_me = Point.scale ?center scale in
-    let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
-    { start = scale_me path.start ; edges = List.map edge_scale path.edges }
+    map scale_me path
 
   let scale_along ?(center=Point.origin) ~axis ratio path =
     let scale_me p =
@@ -84,8 +85,7 @@ struct
       let new_t_axis = Point.mul ratio t_axis in
       (* and rebuild new p from these *)
       Point.add center (Point.add new_t_axis t_perp) in
-    let edge_scale (p, ctrls, i) = scale_me p, List.map scale_me ctrls, i in
-    { start = scale_me path.start ; edges = List.map edge_scale path.edges }
+    map scale_me path
 
   let clip p0 p1 path =
     let is_left p = Point.compare_left p0 p1 p >= 0 in
@@ -107,6 +107,8 @@ struct
     let start_is_left = is_left path.start in
     let res = if start_is_left then [ empty path.start ] else [] in
     aux res path.start start_is_left path.edges
+
+  let rotate ?center ang = map (Point.rotate ?center ang)
 
   (*
    * Interpolators

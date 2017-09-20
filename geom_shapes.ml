@@ -55,6 +55,15 @@ struct
     | [| x; y |] -> [| ~-~ y; x |]
     | _ -> assert false
 
+  let rotate ?(center=origin) ang =
+    let c = K.(of_float (cos (to_float ang)))
+    and s = K.(of_float (sin (to_float ang))) in
+    fun p ->
+      let p = sub p center in
+      let p = [| c *~ p.(0) -~ s *~ p.(1) ;
+                 s *~ p.(0) +~ c *~ p.(1) |] in
+      add p center
+
   let determinant a b c d = (a *~ d) -~ (b *~ c)
 
   let intersection ?(epsilon=K.of_float 1e-8) p0 p1 q0 q1 =
@@ -177,21 +186,11 @@ struct
        * let's focus on the starting point: *)
       next p
 
-  let translate v t =
-    map (fun p -> Point.add p v) t
+  let translate v = map (fun p -> Point.add p v)
 
-  let scale ?center ratio poly =
-    map (Point.scale ?center ratio) poly
+  let scale ?center ratio = map (Point.scale ?center ratio)
 
-  let rotate ?(center=Point.origin) ang poly =
-    let c = Point.K.(of_float (cos (to_float ang)))
-    and s = Point.K.(of_float (sin (to_float ang))) in
-    map (fun p ->
-      let open Point.K.Infix in
-      let p = Point.sub p center in
-      let p = [| c *~ p.(0) -~ s *~ p.(1) ;
-                 s *~ p.(0) +~ c *~ p.(1) |] in
-      Point.add p center) poly
+  let rotate ?center ang = map (Point.rotate ?center ang)
 
   module IsInside = Geom.MakeIsInside (Point.K)
   let is_inside t point =

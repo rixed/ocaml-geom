@@ -43,6 +43,8 @@ sig
   val turn_right : t -> t
 
   val scale : ?center:t -> K.t -> t -> t
+
+  val rotate : ?center:t -> K.t -> t -> t
 end
 
 module type POINT_SET =
@@ -128,6 +130,9 @@ sig
   val straight_to : point -> t -> t
   val bezier_to : point -> (point list) -> t -> t
 
+  (* Replace all points and controllers: *)
+  val map : (Point.t -> Point.t) -> t -> t
+
   (** Approximate a circle using 4 bezier quadratic curves *)
   val circle : ?center:Point.t -> Point.K.t -> t
 
@@ -142,7 +147,6 @@ sig
   val length : t -> int
   (* FIXME: include Pfds_intf.ITERABLE *)
 
-  (* These belongs to ALGO (rename to path_translate, etc) *)
   (** Translates a path. *)
   val translate : Point.t -> t -> t
 
@@ -158,6 +162,8 @@ sig
 
   (** Scale a path along a given axis. *)
   val scale_along : ?center:point -> axis:point -> Point.K.t -> t -> t
+
+  val rotate : ?center:Point.t -> Point.K.t -> t -> t
 
   (** Returns only that part of the path that is on the left of the given
    * line. This can of course return 0, 1 or more paths. *)
