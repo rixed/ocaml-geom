@@ -1,7 +1,7 @@
 open Algen_intf
 
 module Point (Vector : VECTOR)
-  : Geom.POINT with module K = Vector.K =
+  : Geom.POINT with module K = Vector.K and module Bbox = Vector.Bbox =
 struct
   include Vector
   open K.Infix
