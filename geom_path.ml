@@ -265,6 +265,17 @@ struct
     bezier_to [| l;o |] [ [|c;_l|]; [|l;_c|] ] |>
     scale radius |>
     translate center
+
+  let rect min max =
+    empty min |>
+    straight_to [| max.(0) ; min.(1) |] |>
+    straight_to max |>
+    straight_to [| min.(0); max.(1) |] |>
+    straight_to min
+
+  let of_bbox = function
+    | Point.Bbox.Empty -> failwith "of_box"
+    | Point.Bbox.Box (min, max) -> rect min max
 end
 
 module Draw (Path : Geom.PATH) =

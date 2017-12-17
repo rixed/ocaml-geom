@@ -133,9 +133,6 @@ sig
   (* Replace all points and controllers: *)
   val map : (Point.t -> Point.t) -> t -> t
 
-  (** Approximate a circle using 4 bezier quadratic curves *)
-  val circle : ?center:Point.t -> Point.K.t -> t
-
   (** Build a path composed of the first one followed by the second one.
    * They are joint in such a way that the last point of the first path
    * becomes (and replaces) the starting point of the second one (without
@@ -187,15 +184,26 @@ sig
    * the result is undefined. *)
   val is_inside : Point.K.t -> t -> Point.t -> bool
 
-  (* Returns the bbox englobing all control points (so an overestimation
-   * that's independent of the interpolators *)
+  (* Returns the bbox enclosing all control points (therefore an
+   * overestimation that's independent of the interpolators *)
   val bbox : t -> Point.Bbox.t
+
+  (* Returns the (rectangular) path around the given bounding-box.
+   * @raise [Failure] if the bounding box is empty. *)
+  val of_bbox : Point.Bbox.t -> t
 
   val area_min : t -> Point.K.t
 
   val print : Format.formatter -> t -> unit
 
   val rounded : ?radius:Point.K.t -> t list -> t list
+
+  (** Some common shapes: *)
+
+  (** Approximate a circle using 4 bezier quadratic curves *)
+  val circle : ?center:Point.t -> Point.K.t -> t
+
+  val rect : Point.t -> Point.t -> t
 end
 
 module type ALGORITHMS =
