@@ -59,13 +59,15 @@ struct
 
   let translate disp = map ((+~) disp)
 
-  let rec reverse path = match path.edges with
-    | [] -> path
-    | [target, ctrls, interp] ->
-      { start = target ; edges = [ path.start, List.rev ctrls, interp ] }
-    | (target, ctrls, interp) :: e' ->
-      reverse { start = target ; edges = e' } |>
-      extend path.start (List.rev ctrls) interp
+  let reverse path =
+    let reverse_edge start (target, ctrls, interp) =
+      target, (start, List.rev ctrls, interp) in
+    let rec loop rev_edges tail = function
+    | [] -> { start = tail ; edges = rev_edges }
+    | edge :: edges ->
+      let tail, rev_edge = reverse_edge tail edge in
+      loop (rev_edge :: rev_edges) tail edges in
+    loop [] path.start path.edges
 
   let center path =
     (* FIXME: we should add the center of each edge instead of adding the starting point and every edge's last *)
