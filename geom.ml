@@ -79,7 +79,8 @@ sig
    * If two successive edges are not connected any more, [map_edges] will
    * connect them by moving those points to the intersection of those edges.
    *)
-  val map_edges     : (Point.t -> Point.t -> Point.t * Point.t) -> t -> t
+  val map_edges     : ?min_dist2:Point.K.t ->
+                      (Point.t -> Point.t -> Point.t * Point.t) -> t -> t
 
   val is_inside     : t -> Point.t -> bool
   val translate     : Point.t (* Should be vector *) -> t -> t

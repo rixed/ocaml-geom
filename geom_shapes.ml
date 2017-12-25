@@ -132,13 +132,18 @@ struct
     Format.pp_print_string ff "}" ;
     Format.pp_close_box ff ()
 
-  let map_edges f t =
+  let map_edges ?(min_dist2=Point.K.one) f t =
+    let pp = Point.print in
     (* Move prev_stop, last prev_ctrls next_start and first next_ctrls
      * to make prev_stop and next_start equal: *)
-    let pp = Point.print in
     let connect prev_start prev_stop
                 next_start next_stop =
-      if Point.eq prev_stop next_start then true else (
+      let dist2 = Point.distance2 prev_stop next_start in
+      if Point.K.compare dist2 min_dist2 <= 0 then (
+          (* Points are close, merge them to avoid generating a self-crossing
+           * poly: *)
+          true
+      ) else (
           (* Do not try hard to use the intersection if it's too far away.
            * In that case we'd rather draw a nice and clean straight line
            * in between prev_stop and next_start: *)
