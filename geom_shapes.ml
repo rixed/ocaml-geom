@@ -102,6 +102,8 @@ struct
 
   type t = Point.t ring
   
+  let debug = false
+
   let iter_pairs f t =
     let rec aux t1 f n =
       if n > 0 then (
@@ -147,14 +149,15 @@ struct
           | Some inters ->
             Point.copyi prev_stop inters ;
             Point.copyi next_start inters ;
-            Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
+            if debug then
+              Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
             true
       ) in
     let p =
       fold_leftr (fun p t ->
           let start = get t and stop = get (next t) in
           let start', stop' = f start stop in
-          Format.printf "Mapping %a,%a into %a,%a@."
+          if debug then Format.printf "Mapping %a,%a into %a,%a@."
             pp start pp stop pp start' pp stop' ;
           if is_empty p then (
             (* If we haven't inserted anything yet, no question asked,

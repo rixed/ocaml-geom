@@ -48,7 +48,7 @@ struct
   module Point = Poly.Point
   module K = Point.K
 
-  let debug = true
+  let debug = false
 
   let next_pt p = Poly.get (Poly.next p)
   let prev_pt p = Poly.get (Poly.prev p)
@@ -304,7 +304,7 @@ struct
   let inflate dist =
     let open Point.Infix in
     Poly.map_edges (fun start stop ->
-      (* Poly exterior being on the right (clockwise convention)
+      (* Poly exterior being on the right (counter-clockwise convention)
        * then we want to move this edge on the right to inflate the
        * shape. *)
       let open Point in
@@ -420,8 +420,8 @@ struct
             {
               point = Poly.get poly ;
               next_point = Poly.get (Poly.next poly) ;
-              prev = prev ;
-              next = next ;
+              prev ;
+              next ;
               kind = kind_of_point poly ;
               helper = -1 ;
               diags = [ next ]
@@ -551,7 +551,7 @@ struct
           tree := Tree.remove !tree prev ;
           if debug then print_tree ()
         | Split ->
-          (* Fails here? Make sure this poly is clockwise! *)
+          (* Fails here? Make sure this poly is counter-clockwise! *)
           let at_left = Tree.find_before !tree vertex in
           add_diag ppoly i at_left.helper ;
           at_left.helper <- i ;
@@ -657,7 +657,7 @@ struct
              * one End (at end) and Regular_up/down vertices. So all vertices
              * on the stack are regular except for one Start. *)
             let top = ppoly.vertices.(Stack.top stack) in
-            Format.printf "Stack top = %a, v = %a@."
+            if debug then Format.printf "Stack top = %a, v = %a@."
               print_vertex top print_vertex ppoly.vertices.(v) ;
             if top.kind = Start || top.kind = ppoly.vertices.(v).kind then
               process_sameside_vertex v

@@ -40,7 +40,8 @@ struct
     let last = last_point path.edges and first = path.start in
     Point.eq first last
 
-  let extend next ctrls interp path = (match path.edges with
+  let extend next ctrls interp path =
+    (match path.edges with
     | (pt, [], _) :: _ -> if 0 = Point.compare pt next then
       Format.printf "Path edge of no length at point %a@\n" Point.print pt
     | _ -> ()) ;

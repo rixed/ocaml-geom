@@ -84,14 +84,14 @@ struct
       let first = if c = 0 then 0 else outline.contours.(c-1)+1 in
       let last = outline.contours.(c) in
       path_of_contour (first+1) first last (Path.empty (to_point outline.points.(first))) in
-    let is_clockwise paths =
+    let is_cclockwise paths =
       (*0 <> (outline.flags land 4) (* Too bad we can't trust this flag *) *)
       let area = Algo.area_paths_min paths in
       Point.K.compare area Point.K.zero < 0 in
     let get_all_paths () =
       let paths = ref [] in
       for c = 0 to outline.n_contours-1 do paths := get_path c :: !paths done ;
-      if is_clockwise !paths then Algo.reverse_paths !paths else !paths in
+      if is_cclockwise !paths then Algo.reverse_paths !paths else !paths in
     { index = index ;
       paths = get_all_paths () ;
       advance_x = advance_x ;
