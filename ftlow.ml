@@ -37,6 +37,7 @@ type face_info = {
     has_fast_glyphs : bool;
     has_glyph_names : bool;
     has_multiple_masters : bool;
+    pixel_height : float;
   };;
 
 external new_face : library -> string -> int -> face = "new_Face";;

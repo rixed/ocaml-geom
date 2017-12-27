@@ -38,6 +38,7 @@ type face_info = Ftlow.face_info = {
     has_fast_glyphs : bool;
     has_glyph_names : bool;
     has_multiple_masters : bool;
+    pixel_height : float ;
   }
 
 let new_face t font idx =

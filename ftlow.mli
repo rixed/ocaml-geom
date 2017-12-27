@@ -39,6 +39,7 @@ type face_info = {
     has_fast_glyphs : bool;
     has_glyph_names : bool;
     has_multiple_masters : bool;
+    pixel_height : float;
   };;
 
 val new_face : library -> string -> int -> face;;

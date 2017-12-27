@@ -70,7 +70,7 @@ value face_info( facev )
   CAMLlocal1(res);
 
   FT_Face face = *(FT_Face *)facev;
-  res = alloc_tuple(14);
+  res = alloc_tuple(15);
   Store_field(res, 0, Val_int( face->num_faces ));
   Store_field(res, 1, Val_int( face->num_glyphs ));
   Store_field(res, 2, copy_string( face->family_name == NULL ? "" : face->family_name ));
@@ -85,6 +85,7 @@ value face_info( facev )
   Store_field(res,11, Val_bool( FT_HAS_FAST_GLYPHS( face ) ));
   Store_field(res,12, Val_bool( FT_HAS_GLYPH_NAMES( face ) ));
   Store_field(res,13, Val_bool( FT_HAS_MULTIPLE_MASTERS( face ) ));
+  Store_field(res,14, caml_copy_double( face->height / 64. ));
 
   CAMLreturn(res);
 }
