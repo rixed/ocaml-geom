@@ -2,7 +2,7 @@ open Text_intf
 
 open Freetype
 let lib = init ()
-let (face, face_info) =
+let face, face_info =
   let font_files = [
 (*    "/usr/share/fonts/truetype/Isabella.ttf" ;*)
     "/usr/share/fonts/corefonts/arial.ttf" ;
@@ -42,7 +42,7 @@ struct
 
   let make chr =
     let index = get_char_index face (int_of_char chr) in
-    let (advance_x, advance_y) = load_glyph face index [ Load_no_scale ; Load_no_hinting ] in
+    let advance_x, advance_y = load_glyph face index [ Load_no_scale ; Load_no_hinting ] in
     let outline = get_outline_contents face in
     let to_point (x, y) =
       let xs = Poly.Point.K.of_float x in
