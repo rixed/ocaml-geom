@@ -551,14 +551,16 @@ struct
           tree := Tree.remove !tree prev ;
           if debug then print_tree ()
         | Split ->
-          (* Fails here? Make sure this poly is counter-clockwise! *)
-          let at_left = Tree.find_before !tree vertex in
-          add_diag ppoly i at_left.helper ;
-          at_left.helper <- i ;
-          vertex.helper <- i ;
-          if debug then Format.printf "Inserting edge %a into tree@." print_vertex vertex ;
-          tree := Tree.insert !tree vertex ;
-          if debug then print_tree ()
+          (match Tree.find_before !tree vertex with
+          | exception Not_found ->
+              failwith "monotonize: poly must be counter clockwise"
+          | at_left ->
+            add_diag ppoly i at_left.helper ;
+            at_left.helper <- i ;
+            vertex.helper <- i ;
+            if debug then Format.printf "Inserting edge %a into tree@." print_vertex vertex ;
+            tree := Tree.insert !tree vertex ;
+            if debug then print_tree ())
         | Merge ->
           let prev = ppoly.vertices.(ppoly.vertices.(i).prev) in
           let h = prev.helper in
