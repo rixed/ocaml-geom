@@ -39,17 +39,15 @@ struct
     | Tree (_, left, _) -> min left
 
   let find_before t e =
-    let best = ref None in
-    let rec aux = function
-      | Leaf -> ()
+    let rec aux best = function
+      | Leaf -> best
       | Tree (e', left, right) ->
         let cmp = Elmt.compare e e' in
-        if cmp > 0 then (
-          best := Some e' ;
-          aux right
-        ) else aux left in
-    aux t ;
-    match !best with
+        if cmp >= 0 then
+          aux (Some e') right
+        else aux best left
+    in
+    match aux None t with
       | None -> raise Not_found
       | Some x -> x
 end

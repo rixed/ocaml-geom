@@ -352,6 +352,8 @@ struct
     | Some (inter, _), _ ->
       Poly.translate Point.Infix.(inter -~ (Poly.get p)) p
 
+  (* The algorithm below is taken from Comp. Geom. by de Berg, van Kreveld, 2nd Ed, p49 and following.
+   * etc where Y is taken to grow downward. *)
   module Monotonizer =
   struct
     type vertex_kind =
@@ -364,8 +366,6 @@ struct
       | Split -> "Split"
       | Merge -> "Merge"
 
-    (* The algorithm below is taken from Comp. Geom. by de Berg, van Kreveld
-     * etc where Y is taken to grow downward. *)
     let compare_point_y p1 p2 =
       let cmpy = Point.compare_y p1 p2 in
       if cmpy <> 0 then -cmpy else Point.compare_x p1 p2
@@ -396,7 +396,7 @@ struct
       mutable diags : int list }
 
     let print_vertex fmt v =
-      Format.fprintf fmt "@[{fr:%a to:%a k:%s h:%d <-:%d ->:%d diags:["
+      Format.fprintf fmt "@[{from:%a@ to:%a@ k:%s@ h:%d@ <-:%d@ ->:%d@ diags:["
         Point.print v.point
         Point.print v.next_point
         (string_of_kind v.kind)
@@ -495,14 +495,11 @@ struct
       if e1l == e2l && e1h == e2h then 0
       else
         let poly = (Poly.insert_after (Poly.insert_after (Poly.insert_after (Poly.insert_after Poly.empty e1h) e1l) e2l) e2h) in
-        let cmp = K.compare (area_polys [poly]) K.zero in
-        if cmp <> 0 then cmp
-        else
-          (* Can happen if e1 and e2 share a vertex, or are colinear.
-           * In this case we don't care of the result we just want it to be consistant. *)
-          compare_point_y e1l e2l
+        K.compare (area_polys [poly]) K.zero
 
     module Tree = Cnt_impl.SimpleTree (struct
+      (* Conceptually this is a tree of edges but we denote an edge with
+       * its first vertex. *)
       type t = vertex
       let compare v1 v2 = compare_edge_x v1 v2
     end)
@@ -533,8 +530,8 @@ struct
 
       let print_tree () =
         Format.printf "tree = @[" ;
-        Tree.iter !tree (fun edge ->
-          Format.printf "%a@ " print_vertex edge) ;
+        Tree.iter !tree (fun v ->
+          Format.printf "%a@ " print_vertex v) ;
         Format.printf "@]@." in
 
       let process_vertex i vertex =
