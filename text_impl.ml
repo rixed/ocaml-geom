@@ -1,6 +1,8 @@
 open Text_intf
-
 open Freetype
+
+let debug = false
+
 let lib = init ()
 let face, face_info =
   let font_files = [
@@ -134,12 +136,16 @@ struct
     used.polys
 
   let add_cache key polys =
-    (* replace the last element (TODO: keep the idx of the first unused element) *)
+    (* Replace the last element (TODO: keep the idx of the first unused element)
+     * and then bubble-it up: *)
     let idx = max_kept_glyphs-1 in
+    if used_glyphs.(idx).nb_use > 0 then
+      Hashtbl.remove glyph_cache key ;
     let entry = { nb_use = 1 ; idx = idx ; polys = polys } in
     used_glyphs.(idx) <- entry ;
     promote_in_cache idx ;
-    Hashtbl.add glyph_cache key entry
+    Hashtbl.add glyph_cache key entry ;
+    if debug then Format.printf "%d entries in the glyph cache@." (Hashtbl.length glyph_cache)
 
   let to_paths glyph = glyph.paths
 
