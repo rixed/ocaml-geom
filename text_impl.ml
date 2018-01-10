@@ -38,11 +38,13 @@ struct
     index : char_index ;
     paths : Path.t list ;
     advance_x : float ;
-    advance_y : float }
+    advance_y : float ;
+    metrics : glyph_metrics }
 
   let make chr =
     let index = get_char_index face (int_of_char chr) in
     let advance_x, advance_y = load_glyph face index [ Load_no_scale ; Load_no_hinting ] in
+    let metrics = get_glyph_metrics face in
     let outline = get_outline_contents face in
     let to_point (x, y) =
       let xs = Poly.Point.K.of_float x in
@@ -95,7 +97,8 @@ struct
     { index = index ;
       paths = get_all_paths () ;
       advance_x = advance_x ;
-      advance_y = advance_y }
+      advance_y = advance_y ;
+      metrics }
 
   (* We keep a cache of all generated glyphs : *)
   type used_glyph =
@@ -103,7 +106,7 @@ struct
       mutable idx    : int ;
               polys  : Poly.t list }
 
-  let max_kept_glyphs = 200 (* we keep only this amount of glyphs, the more used *)
+  let max_kept_glyphs = 200 (* we keep only this amount of glyphs per cache key *)
 
   (* Array is ordered in descending nb_use count *)
   let used_glyphs = Array.init max_kept_glyphs (fun i -> { nb_use = 0 ; idx = i ; polys = [] })
@@ -154,7 +157,20 @@ struct
       | path :: other ->
         extend_bbox (Point.Bbox.union current (Path.bbox path)) other in
     extend_bbox Point.Bbox.empty glyph.paths
-  
+
+  (* Use the glyph metrics *)
+  let fast_bbox ?(orientation=Horizontal) glyph =
+    let bearing =
+      match orientation with
+      | Horizontal -> glyph.metrics.gm_hori
+      | Vertical   -> glyph.metrics.gm_vert in (* TODO: check that *)
+    let f = Point.K.of_float in
+    let mi = [| f bearing.bearingx ;
+                f (bearing.bearingy -. glyph.metrics.gm_height) |]
+    and ma = [| f (bearing.bearingx +. glyph.metrics.gm_width) ;
+                f bearing.bearingy |] in
+    Point.Bbox.(add (make mi) ma)
+
   let advance ?(orientation=Horizontal) prev_glyph next_glyph =
     match orientation with
     | Horizontal ->
@@ -174,9 +190,10 @@ struct
   module Poly = Glyph.Poly
   module Point = Poly.Point
 
+  (* First position will be Point.zero *)
   type t = (Point.t * Glyph.t) list
 
-  let make ?(orientation=Horizontal) str =
+  let make ?orientation str =
     let rec add_char i word pos =
       if i >= String.length str then
         word
@@ -187,12 +204,21 @@ struct
         let offset = match word with
         | [] -> pos
         | (_, prev_g) :: _ ->
-          let advance = Glyph.advance ~orientation prev_g glyph in
+          let advance = Glyph.advance ?orientation prev_g glyph in
           Point.add pos advance in
         let next_word = (offset, glyph) :: word in
         add_char (i+1) next_word offset in
     add_char 0 [] Point.zero
 
+  (* Use the glyph metrics *)
+  let fast_bbox ?orientation word =
+    List.fold_left (fun b (p, g) ->
+      let g_bbox = Glyph.fast_bbox ?orientation g in
+      let g_bbox = Point.Bbox.translate g_bbox p in
+      Point.Bbox.union b g_bbox
+    ) Point.Bbox.empty word
+
+  (* Use actual geometry *)
   let bbox word =
     (* A glyph has no position since it's only the "pure", abstract representation of a symbol.
        But glyphs in words are positioned. So we must compute the bbox as the union of all
@@ -200,11 +226,7 @@ struct
     let rec aux bbox = function
       | [] -> bbox
       | (pos, glyph) :: others ->
-        let translate_bbox pos = function
-          | Point.Bbox.Empty -> Point.Bbox.Empty
-          | Point.Bbox.Box (x, y) ->
-            Point.Bbox.Box (Point.add x pos, Point.add y pos) in
-        let g_bbox = translate_bbox pos (Glyph.bbox glyph) in
+        let g_bbox = Point.Bbox.translate (Glyph.bbox glyph) pos in
         let new_bbox = Point.Bbox.union bbox g_bbox in
         aux new_bbox others in
     aux Glyph.Poly.Point.Bbox.empty word
@@ -214,4 +236,12 @@ struct
   
   let to_paths word =
     List.map (fun (p, g) -> p, Glyph.to_paths g) word
+
+  let lower_left_to_origin ?orientation word =
+    let bbox = fast_bbox ?orientation word in
+    match bbox with
+    | Point.Bbox.Empty -> Point.zero
+    | Point.Bbox.Box (mi, _ma) ->
+      (* TODO: What to do if not Horizontal? *)
+      Point.opposite mi
 end
