@@ -203,4 +203,15 @@ struct
   module IsInside = Geom.MakeIsInside (Point.K)
   let is_inside t point =
     IsInside.is_inside (iter_edges t) point
+
+  (* Remove identical consecutive points: *)
+  let simplify t =
+    let same_pos p0 p1 = Point.eq p0 p1 in
+    let t', changed =
+      fold_leftr (fun (t', changed) t ->
+        let p = get t in
+        if same_pos p (get (next t)) then t', true
+        else (insert_after t' p, changed)
+      ) (empty, false) t in
+    if changed then t' else t
 end

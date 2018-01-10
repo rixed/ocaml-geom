@@ -87,6 +87,8 @@ sig
   val scale         : ?center:Point.t -> Point.K.t -> t -> t
   val rotate        : ?center:Point.t -> Point.K.t -> t -> t
   val print         : Format.formatter -> t -> unit
+  (* Remove successive identical points: *)
+  val simplify      : t -> t
 end
 
 (** A Path is basically a point list with interpolators in between

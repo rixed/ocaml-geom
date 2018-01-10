@@ -408,6 +408,8 @@ struct
 
     (* return the procpoly equivalent to a list of simple polys *)
     let make_procpoly polys =
+      (* This work only on polys which have no consecutive equal points: *)
+      let polys = List.map Poly.simplify polys in
       let size = List.fold_left (fun sz poly -> sz + (Poly.length poly)) 0 polys in
       let loop_start = ref 0 in
       let left_polys = ref polys in
