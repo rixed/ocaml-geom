@@ -133,26 +133,39 @@ struct
   let rec bezier ?(depth=0) ctrls res =
     if debug then Format.printf "bezier loop depth=%d, pts=%a@." depth (format_array Point.print) ctrls ;
     let len = Array.length ctrls in
-    let mid_point = Point.(half (ctrls.(0) +~ ctrls.(len-1))) in
-    let ctrls_l = Array.make len Point.zero
-    and ctrls_r = Array.make len Point.zero in
-    let rec split n ctrls =
-      let len' = Array.length ctrls in
-      ctrls_l.(n) <- ctrls.(0) ;
-      ctrls_r.((len - 1) - n) <- ctrls.(len' - 1) ;
-      if len' > 1 then (
-        let ctrls' = Array.init (len' - 1) (fun i ->
-          Point.(half ctrls.(i) +~ half ctrls.(i+1))) in
-        split (n + 1) ctrls'
-      )
-    in
-    split 0 ctrls ;
-    let d = Point.(norm2 (mid_point -~ ctrls_r.(0))) in
-    if debug then Format.printf "... mid_point=%a, ctrls_r.(0)=%a@." Point.print mid_point Point.print ctrls_r.(0) ;
-    if d <= Point.K.square res || depth >= 15 then
-      [ ctrls_r.(0) ]
-    else
-      (bezier ~depth:(depth + 1) ctrls_l res) @ [ ctrls_r.(0) ] @ (bezier ~depth:(depth + 1) ctrls_r res)
+    (* Is this a flat line? Comparing the mid point with the middle controller
+     * is not reliable since they could be very close while still the curve
+     * very far away at other control points. So we loop over all control
+     * points, compute their distance with the straight line, and only if their
+     * are all close enough do we consider this a straight line. *)
+    try
+      let v = ctrls.(len-1) -~ ctrls.(0) in
+      let len_1 = Point.K.inv (Point.K.of_int (len-1)) in
+      for i = 1 to len - 2 do
+        let proj =
+          Point.(ctrls.(0) +~ mul len_1 (mul (Point.K.of_int i) v)) in
+        let d = Point.(norm2 (proj -~ ctrls.(i))) in
+        if debug then Format.printf "... mid_point=%a, ctrls.(i)=%a@." Point.print proj Point.print ctrls.(i) ;
+        if d > Point.K.square res then raise Exit
+      done ;
+      (* So this is flat enough: *)
+      [ ctrls.(len-1) ]
+    with Exit ->
+      (* Not flat, let's interpolate further: *)
+      let ctrls_l = Array.make len Point.zero
+      and ctrls_r = Array.make len Point.zero in
+      let rec split n ctrls =
+        let len' = Array.length ctrls in
+        ctrls_l.(n) <- ctrls.(0) ;
+        ctrls_r.((len - 1) - n) <- ctrls.(len' - 1) ;
+        if len' > 1 then (
+          let ctrls' = Array.init (len' - 1) (fun i ->
+            Point.(half ctrls.(i) +~ half ctrls.(i+1))) in
+          split (n + 1) ctrls'
+        )
+      in
+      split 0 ctrls ;
+      (bezier ~depth:(depth + 1) ctrls_l res) @ (bezier ~depth:(depth + 1) ctrls_r res)
 
   let make_bezier_curve start stop ctrls res =
     let len = List.length ctrls in
