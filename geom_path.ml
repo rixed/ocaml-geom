@@ -120,34 +120,39 @@ struct
   (* Whatever the resolution, a straight line need no intermediary points *)
   let make_straight_line _start _stop _control _res = []
 
-  let rec bezier ctrls res =
-    let half_vector = Array.map Point.K.half in
-    let len = Array.length ctrls in
-    let mid_point = half_vector (Point.add ctrls.(0) ctrls.(len-1)) in
-    let ctrls_l = Array.make len Point.zero in
-    let ctrls_r = Array.make len Point.zero in
-    let bino_coef = Array.init len (fun i -> if i = 0 then Point.K.one else Point.K.zero) in
-    let divisor = ref Point.K.one in
-    for l = 0 to (len-1) do
-      let ll = len-1-l in
-      (* compute line l (resp. len+1-l) of ctrls_l (resp. ctrls_r) *)
-      for c = 0 to (len-1) do
-        let cc = len-1-c in
-        ctrls_l.(l)  <- Point.add ctrls_l.(l)  (Point.mul bino_coef.(c)  ctrls.(c)) ;
-        ctrls_r.(ll) <- Point.add ctrls_r.(ll) (Point.mul bino_coef.(cc) ctrls.(c))
-      done ;
-      ctrls_l.(l)  <- Point.mul (Point.K.inv !divisor) ctrls_l.(l)  ;
-      ctrls_r.(ll) <- Point.mul (Point.K.inv !divisor) ctrls_r.(ll) ;
-      (* update binomial coefs *)
-      for c = (len - 1) downto 1 do
-        bino_coef.(c) <- Point.K.add bino_coef.(c) bino_coef.(c-1)
-      done ;
-      divisor := Point.K.double !divisor
+  let debug = false
+
+  let format_array p fmt a =
+    Format.fprintf fmt "@[[" ;
+    for i = 0 to Array.length a - 1 do
+      Format.fprintf fmt "%a%," p a.(i)
     done ;
-    if (Point.norm2 (Point.sub mid_point ctrls_r.(0))) < Point.K.square res then
-      [ctrls_r.(0)]
+    Format.fprintf fmt "]@]"
+
+  (* TODO: faster impl for 3 and 4 points *)
+  let rec bezier ?(depth=0) ctrls res =
+    if debug then Format.printf "bezier loop depth=%d, pts=%a@." depth (format_array Point.print) ctrls ;
+    let len = Array.length ctrls in
+    let mid_point = Point.(half (ctrls.(0) +~ ctrls.(len-1))) in
+    let ctrls_l = Array.make len Point.zero
+    and ctrls_r = Array.make len Point.zero in
+    let rec split n ctrls =
+      let len' = Array.length ctrls in
+      ctrls_l.(n) <- ctrls.(0) ;
+      ctrls_r.((len - 1) - n) <- ctrls.(len' - 1) ;
+      if len' > 1 then (
+        let ctrls' = Array.init (len' - 1) (fun i ->
+          Point.(half ctrls.(i) +~ half ctrls.(i+1))) in
+        split (n + 1) ctrls'
+      )
+    in
+    split 0 ctrls ;
+    let d = Point.(norm2 (mid_point -~ ctrls_r.(0))) in
+    if debug then Format.printf "... mid_point=%a, ctrls_r.(0)=%a@." Point.print mid_point Point.print ctrls_r.(0) ;
+    if d <= Point.K.square res || depth >= 15 then
+      [ ctrls_r.(0) ]
     else
-      (bezier ctrls_l res) @ [ctrls_r.(0)] @ (bezier ctrls_r res)
+      (bezier ~depth:(depth + 1) ctrls_l res) @ [ ctrls_r.(0) ] @ (bezier ~depth:(depth + 1) ctrls_r res)
 
   let make_bezier_curve start stop ctrls res =
     let len = List.length ctrls in
