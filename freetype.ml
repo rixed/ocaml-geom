@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: freetype.ml,v 1.7 2004/09/24 14:27:32 weis Exp $*)
+(* $Id: freetype.ml,v 1.1 2007/01/18 10:29:57 rousse Exp $*)
 
 type ('a, 'b) refbox = { cont : 'a; ref : 'b ref; }
 
@@ -41,10 +41,12 @@ type face_info = Ftlow.face_info = {
     pixel_height : float ;
   }
 
+let done_face face = Ftlow.done_face face.cont
+
 let new_face t font idx =
   let face = {cont = Ftlow.new_face t.cont font idx; ref = ref t} in
   let info = Ftlow.face_info face.cont in
-  Gc.finalise (fun v -> Ftlow.done_face v.cont) face;
+  Gc.finalise done_face face;
   face, info
 
 let get_num_glyphs face = Ftlow.get_num_glyphs face.cont

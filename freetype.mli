@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: freetype.mli,v 1.6 2004/09/27 07:52:47 weis Exp $ *)
+(* $Id: freetype.mli,v 1.1 2007/01/18 10:29:57 rousse Exp $ *)
 
 type t (** type for Freetype library *)
 

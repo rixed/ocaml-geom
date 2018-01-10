@@ -29,6 +29,7 @@ value init_FreeType()
     failwith( "init_FreeType: Memory over" );
   }
   if( FT_Init_FreeType( library ) ){
+    stat_free(library);
     failwith( "FT_Init_FreeType" );
   }
   CAMLreturn( (value) library );
@@ -58,6 +59,7 @@ value new_Face( library, fontpath, idx )
     failwith( "new_Face: Memory over" );
   }
   if( FT_New_Face( *(FT_Library *)library, String_val( fontpath ), Int_val( idx ), face ) ){
+    stat_free(face);
     failwith( "new_Face: Could not open face" );
   }
   CAMLreturn( (value) face );
@@ -97,6 +99,7 @@ value done_Face( face )
   int err = FT_Done_Face( *(FT_Face *) face );
   if (err) {
     fprintf(stderr, "FT_Done_Face failed with code %d\n", err);
+    failwith("FT_Done_Face");
   }
   CAMLreturn( Val_unit );
 }
@@ -116,8 +119,8 @@ value set_Char_Size( face, char_w, char_h, res_h, res_v )
 {
   CAMLparam5( face, char_w, char_h, res_h, res_v );
   if ( FT_Set_Char_Size( *(FT_Face *) face,
-       Int_val(char_w), Int_val(char_h),
-       Int_val(res_h), Int_val(res_v) ) ){
+		    Int_val(char_w), Int_val(char_h),
+			 Int_val(res_h), Int_val(res_v) ) ){
     failwith("FT_Set_Char_Size");
   }
   CAMLreturn(Val_unit);
@@ -132,7 +135,7 @@ value set_Pixel_Sizes( face, pixel_w, pixel_h )
 {
   CAMLparam3(face,pixel_w,pixel_h);
   if ( FT_Set_Pixel_Sizes( *(FT_Face *) face,
-       Int_val(pixel_w), Int_val(pixel_h) ) ){
+			 Int_val(pixel_w), Int_val(pixel_h) ) ){
     failwith("FT_Set_Pixel_Sizes");
   }
   CAMLreturn(Val_unit);
@@ -196,9 +199,9 @@ value set_CharMap( facev, charmapv )
   while( i < face->num_charmaps ){
     charmap = face->charmaps[i];
     if ( charmap->platform_id == my_pid &&
-         charmap->encoding_id == my_eid ){
+	 charmap->encoding_id == my_eid ){
       if ( FT_Set_Charmap( face, charmap ) ){
-        failwith("FT_Set_Charmap");
+	failwith("FT_Set_Charmap");
       }
       CAMLreturn(Val_unit);
     } else {
@@ -269,9 +272,9 @@ value render_Char( face, code, flags, mode )
 
   /* FT_Load_Glyph(face, FT_Get_Char_Index( face, code ), FT_LOAD_RENDER) */
   if( FT_Load_Char( *(FT_Face *) face, Int_val(code),
-      FT_LOAD_RENDER |
-      Int_val(flags) |
-      (Int_val(mode) ? FT_LOAD_MONOCHROME : 0)) ){
+		    FT_LOAD_RENDER |
+		    Int_val(flags) |
+		    (Int_val(mode) ? FT_LOAD_MONOCHROME : 0)) ){
     failwith("FT_Load_Char");
   }
 
