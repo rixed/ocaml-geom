@@ -152,11 +152,16 @@ struct
                                    next_start next_stop with
           | None -> false
           | Some inters ->
-            Point.copyi prev_stop inters ;
-            Point.copyi next_start inters ;
-            if debug then
-              Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
-            true
+            (* Again, if the computed intersection is too far away, we'd
+             * rather add a segment: *)
+            let inters_dist2 = Point.distance2 inters prev_stop in
+            if inters_dist2 > Point.K.double dist2 then false
+            else (
+              Point.copyi prev_stop inters ;
+              Point.copyi next_start inters ;
+              if debug then
+                Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
+              true)
       ) in
     let p =
       fold_leftr (fun p t ->
