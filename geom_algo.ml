@@ -301,8 +301,9 @@ struct
   let polys_of_paths ~res paths =
     List.map (poly_of_path ~res) paths
 
-  let inflate dist =
+  let inflate dist poly =
     let open Point.Infix in
+    Poly.simplify poly |>
     Poly.map_edges (fun start stop ->
       (* Poly exterior being on the right (counter-clockwise convention)
        * then we want to move this edge on the right to inflate the
