@@ -163,6 +163,12 @@ struct
     Format.pp_print_string ff "}" ;
     Format.pp_close_box ff ()
 
+  let print_list ff lst =
+    Format.fprintf ff "[@[" ;
+    List.iter (fun p ->
+      Format.fprintf ff "%a@," print p) lst ;
+    Format.fprintf ff "@]]"
+
   let map_edges ?(min_dist2=Point.K.one) f t =
     let pp = Point.print in
     (* Move prev_stop, last prev_ctrls next_start and first next_ctrls

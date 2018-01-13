@@ -94,6 +94,8 @@ sig
   val scale         : ?center:Point.t -> Point.K.t -> t -> t
   val rotate        : ?center:Point.t -> Point.K.t -> t -> t
   val print         : Format.formatter -> t -> unit
+  val print_list    : Format.formatter -> t list -> unit
+
   (* Remove successive identical points: *)
   val simplify      : t -> t
 end
