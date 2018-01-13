@@ -66,18 +66,49 @@ struct
 
   let determinant a b c d = (a *~ d) -~ (b *~ c)
 
-  let intersection ?(epsilon=K.of_float 1e-8) p0 p1 q0 q1 =
+  (* TODO: a K.epsilon *)
+  let intersection ?(epsilon=K.zero) p0 p1 q0 q1 =
     let x1 = p0.(0) and y1 = p0.(1)
     and x2 = p1.(0) and y2 = p1.(1)
     and x3 = q0.(0) and y3 = q0.(1)
     and x4 = q1.(0) and y4 = q1.(1) in
     let den = determinant (x1 -~ x2) (y1 -~ y2) (x3 -~ x4) (y3 -~ y4) in
+    (* den will be zero if lines are parallel.
+     * FIXME: In this case we should check if the lines are actually
+     * the same and return a chosen value in that case (caller might want
+     * to consider identical lines as sequent or not). *)
     if K.abs den <=~ epsilon then None else
     let det1 = determinant x1 y1 x2 y2
     and det2 = determinant x3 y3 x4 y4 in
     Some [|
       (determinant det1 (x1 -~ x2) det2 (x3 -~ x4)) /~ den ;
       (determinant det1 (y1 -~ y2) det2 (y3 -~ y4)) /~ den |]
+
+  type segment_intersection =
+    | Parallel | IntersectInside of t | IntersectOutside of t
+
+  let segment_intersection ?(epsilon=K.zero) p0 p1 q0 q1 =
+    let den = p0.(0) *~ (q1.(1) -~ q0.(1)) +~
+              p1.(0) *~ (q0.(1) -~ q1.(1)) +~
+              q1.(0) *~ (p1.(1) -~ p0.(1)) +~
+              q0.(0) *~ (p0.(1) -~ p1.(1)) in
+    (* FIXME: same as above, but additionally we want to return the actual
+     * intersection of the segments when they are indeed intersecting. *)
+    if den <=~ epsilon then Parallel else
+    let num1 = p0.(0) *~ (q1.(1) -~ q0.(1)) +~
+               q0.(0) *~ (p0.(1) -~ q1.(1)) +~
+               q1.(0) *~ (q0.(1) -~ p0.(1)) in
+    let s = num1 /~ den in
+    let num2 = p0.(0) *~ (q0.(1) -~ p1.(1)) +~
+               p1.(0) *~ (p0.(1) -~ q0.(1)) +~
+               q0.(0) *~ (p1.(1) -~ p0.(1)) |>
+               K.neg in
+    let t = num2 /~ den in
+    let inside = K.zero <=~ s && s <=~ K.one &&
+                 K.zero <=~ t && t <=~ K.one
+    and intersection = Infix.(p0 +~ Vector.mul s (p1 -~ p0)) in
+    if inside then IntersectInside intersection
+              else IntersectOutside intersection
 
   let center p1 p2 =
     let p = add p1 p2 in
@@ -144,24 +175,24 @@ struct
            * poly: *)
           true
       ) else (
-          (* Do not try hard to use the intersection if it's too far away.
-           * In that case we'd rather draw a nice and clean straight line
-           * in between prev_stop and next_start: *)
-          match Point.intersection ~epsilon:(Point.K.of_float 0.5)
-                                   prev_start prev_stop
-                                   next_start next_stop with
-          | None -> false
-          | Some inters ->
-            (* Again, if the computed intersection is too far away, we'd
-             * rather add a segment: *)
-            let inters_dist2 = Point.distance2 inters prev_stop in
-            if inters_dist2 > Point.K.double dist2 then false
-            else (
-              Point.copyi prev_stop inters ;
-              Point.copyi next_start inters ;
-              if debug then
-                Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
-              true)
+          match Point.segment_intersection prev_start prev_stop
+                                           next_start next_stop with
+          | Point.Parallel | Point.IntersectOutside _ ->
+            (* TODO: if the line intersection is not too far away, use it
+             * as below to save one point? *)
+            (*let inters_dist2 = Point.distance2 inters prev_stop in
+            if inters_dist2 > Point.K.double dist2 then false else ... *)
+            if debug then
+              Format.printf "No intersection between@ %a - %a and@ %a %a@."
+                Point.print prev_start Point.print prev_stop
+                Point.print next_start Point.print next_stop ;
+            false
+          | Point.IntersectInside inters ->
+            Point.copyi prev_stop inters ;
+            Point.copyi next_start inters ;
+            if debug then
+              Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
+            true
       ) in
     let p =
       fold_leftr (fun p t ->

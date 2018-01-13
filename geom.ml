@@ -29,6 +29,13 @@ sig
    * considering the lines are parallel. *)
   val intersection : ?epsilon:K.t -> t -> t -> t -> t -> t option
 
+  (** [segment_intersection p1 p2 q1 q2] tells if two segments intersect
+   * and the point of intersection (even if the segment do not interect
+   * as long as the lines are not parallel). *)
+  type segment_intersection =
+    | Parallel | IntersectInside of t | IntersectOutside of t
+  val segment_intersection : ?epsilon:K.t -> t -> t -> t -> t -> segment_intersection
+
   val copy : t -> t
 
   val area : t -> t -> K.t
