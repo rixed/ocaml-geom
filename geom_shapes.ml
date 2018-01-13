@@ -169,16 +169,13 @@ struct
       Format.fprintf ff "%a@," print p) lst ;
     Format.fprintf ff "@]]"
 
-  let map_edges ?(min_dist2=Point.K.one) f t =
+  let map_edges f t =
     let pp = Point.print in
     (* Move prev_stop, last prev_ctrls next_start and first next_ctrls
      * to make prev_stop and next_start equal: *)
     let connect prev_start prev_stop
                 next_start next_stop =
-      let dist2 = Point.distance2 prev_stop next_start in
-      if Point.K.compare dist2 min_dist2 <= 0 then (
-          (* Points are close, merge them to avoid generating a self-crossing
-           * poly: *)
+      if Point.eq prev_stop next_start then (
           true
       ) else (
           match Point.segment_intersection prev_start prev_stop
@@ -195,7 +192,7 @@ struct
             false
           | Point.IntersectInside inters ->
             Point.copyi prev_stop inters ;
-            Point.copyi next_start inters ;
+            (* Point.copyi next_start inters new_start won't be used *)
             if debug then
               Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
             true
@@ -227,14 +224,12 @@ struct
     let prev_start = get (prev p) and prev_stop = get p
     and next_start = get (next p) and next_stop = get (next (next p)) in
     if connect prev_start prev_stop next_start next_stop then
-      (* So now prev_stop and next_start have been moved to the same
-       * position, and we must get rid of one of them. We remove prev_stop so
-       * we end up with the cursor on the starting point, which is nice:*)
-      remove p
+      (* So now prev_stop have been moved to the intersection
+       * position, and we must get rid of next_start. *)
+      remove (next p)
     else
-      (* We failed to connect? Simply keep both of them then! But still,
-       * let's focus on the starting point: *)
-      next p
+      (* We failed to connect? Simply keep both of them then! *)
+      p
 
   let translate v = map (fun p -> Point.add p v)
 
