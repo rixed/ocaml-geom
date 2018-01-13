@@ -3,10 +3,9 @@ open Freetype
 
 let debug = false
 
-let lib = init ()
-let face, face_info =
-  let font_files = [
-(*    "/usr/share/fonts/truetype/Isabella.ttf" ;*)
+let font_files =
+  let well_known = [
+    "/usr/share/fonts/truetype/Isabella.ttf" ;
     "/usr/share/fonts/corefonts/arial.ttf" ;
     "/usr/share/fonts/ttf-bitstream-vera/Vera.ttf" ;
     "/opt/X11/share/fonts/TTF/Vera.ttf" ;
@@ -14,17 +13,35 @@ let face, face_info =
     "/usr/share/fonts/truetype/freefont/FreeSans.ttf" ;
     "/usr/share/fonts/tahoma.ttf" ;
     "/usr/local/lib/X11/fonts/bitstream-vera/Vera.ttf" ] in
-  let rec init_first = function
-    | [] -> failwith "No working font file !"
-    | file :: others ->
-      try
-        let ret = new_face lib file 0 in
-        Format.printf "Using true type font file %s@." file ;
-        ret
-      with Failure _ -> (
-        Format.printf "Skip font file %s@." file ;
-        init_first others ) in
-  init_first font_files
+  List.filter (fun f ->
+    try let _ = Unix.stat f in true
+    with Unix.(Unix_error (ENOENT, _, _)) -> false
+  ) well_known |>
+  ref
+
+let get_face =
+  let face = ref None in
+  fun () ->
+    match !face with
+    | Some f -> f
+    | None ->
+        let lib = Freetype.init () in
+        let rec init_first = function
+          | [] -> failwith "No working font file !"
+          | file :: others ->
+            try
+              let ret = new_face lib file 0 in
+              Format.printf "Using true type font file %s@." file ;
+              face := Some ret
+            with Failure _ -> (
+              Format.printf "Skip font file %s@." file ;
+              init_first others ) in
+        init_first !font_files ;
+        match !face with
+        | Some f -> f
+        | None ->
+          Printf.eprintf "Cannot find any font file.\n" ;
+          exit 1
 
 module Glyph
   (Poly : Geom.POLYGON)
@@ -44,6 +61,7 @@ struct
     metrics : glyph_metrics }
 
   let make chr =
+    let face, _face_info = get_face () in
     let index = get_char_index face (int_of_char chr) in
     let advance_x, advance_y = load_glyph face index [ Load_no_scale ; Load_no_hinting ] in
     let metrics = get_glyph_metrics face in
@@ -180,6 +198,7 @@ struct
   let advance ?(orientation=Horizontal) prev_glyph next_glyph =
     match orientation with
     | Horizontal ->
+      let face, _face_info = get_face () in
       let kern_vec = get_kerning face prev_glyph.index next_glyph.index Kerning_unscaled in
       [| Point.K.of_float (prev_glyph.advance_x +. kern_vec.ft_x) ;
          Point.K.of_float kern_vec.ft_y |]

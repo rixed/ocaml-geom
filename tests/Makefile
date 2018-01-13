@@ -5,7 +5,7 @@ PROGRAMS = test.opt test_word.opt test_prec.opt test_rounded.opt test_inside.opt
 all: opt
 opt: $(PROGRAMS)
 
-REQUIRES = pfds oaah
+REQUIRES = unix pfds oaah
 
 OCAMLFLAGS =
 OCAMLOPTFLAGS =

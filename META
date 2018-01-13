@@ -1,5 +1,5 @@
 description = "Simple computational geometry library"
 version = "1"
-requires = "pfds algen"
+requires = "unix pfds algen"
 archive(byte) = "geom.cma"
 archive(native) = "geom.cmxa"
