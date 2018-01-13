@@ -41,7 +41,7 @@ struct
     let (^^) a b = (* Exclusive logical or *)
       if a then not b else b in
     let at_left a b c = (compare_left a b c) > 0 in
-    if p0 == q0 || p1 == q1 then closed else
+    if eq p0 q0 || eq p1 q1 then closed else
     (* Only one of {q0,q1} is at left of (p0,p1) *)
     ((at_left p0 p1 q0) ^^ (at_left p0 p1 q1)) &&
     (* Only one of {p0,p1} is at left of (q0,q1) *)

@@ -773,7 +773,7 @@ struct
         let rec aux last = function
           | [] ->
             f last.x last.x y last.area ;
-            if K.compare K.zero last.cover != 0 then
+            if K.compare K.zero last.cover <> 0 then
               if debug then
                 Format.printf "bug: last cover = %a instead of 0@.@!"
                   K.print last.cover ;
