@@ -493,10 +493,9 @@ struct
       let min_max p0 p1 = if compare_point_y p0 p1 < 0 then p0, p1 else p1, p0 in
       let e1l, e1h = min_max v1.point v1.next_point in
       let e2l, e2h = min_max v2.point v2.next_point in
-      if e1l == e2l && e1h == e2h then 0
-      else
-        let poly = (Poly.insert_after (Poly.insert_after (Poly.insert_after (Poly.insert_after Poly.empty e1h) e1l) e2l) e2h) in
-        K.compare (area_polys [poly]) K.zero
+      let poly = (Poly.insert_after (Poly.insert_after (Poly.insert_after (Poly.insert_after Poly.empty e1h) e1l) e2l) e2h) in
+      let area = area_polys [poly] in
+      K.compare area K.zero
 
     module Tree = Cnt_impl.SimpleTree (struct
       (* Conceptually this is a tree of edges but we denote an edge with
