@@ -252,8 +252,9 @@ struct
     let t', changed =
       fold_leftr (fun (t', changed) t ->
         let p = get t in
-        if same_pos p (get (next t)) then t', true
-        else (insert_after t' p, changed)
+        if is_empty t' || not (same_pos p (get t'))
+          then insert_after t' p, changed
+          else t', true
       ) (empty, false) t in
     if changed then t' else t
 end
