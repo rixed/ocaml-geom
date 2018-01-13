@@ -87,7 +87,7 @@ struct
       not cmp2 && (Point.compare_left focus prev next) > 0
 
 
-  (* Check weither the target point is toward the interior of the poly at the focused point *)
+  (* Check whether the target point is toward the interior of the poly at the focused point *)
   let in_cone poly target =
     in_between (prev_pt poly) (Poly.get poly) (next_pt poly) target
 
@@ -488,8 +488,11 @@ struct
       ppoly.vertices.(i2).diags <- i1 :: ppoly.vertices.(i2).diags
 
     (* For the Tree *)
+    (* Note: When called, v1 is what we add/remove/look for and v2 is an
+     * element of the tree. *)
     let compare_edge_x v1 v2 =
-      (* e1 is at left from e2 if the polygon (e1h, e1l, e2l, e2h) is direct *)
+      (* Idea: e1 is at left from e2 if the polygon (e1h, e1l, e2l, e2h) is
+       * direct *)
       let min_max p0 p1 = if compare_point_y p0 p1 < 0 then p0, p1 else p1, p0 in
       let e1l, e1h = min_max v1.point v1.next_point in
       let e2l, e2h = min_max v2.point v2.next_point in
@@ -513,6 +516,7 @@ struct
       queue
 
     let monotonize polys =
+      if debug then Format.printf "MONOTONIZE %a@." Poly.print_list polys ;
       let ppoly = make_procpoly polys in
       let queue = make_queue ppoly in
 
