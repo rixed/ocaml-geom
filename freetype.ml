@@ -212,8 +212,7 @@ let get_outline_contents face =
 (* kerning *)
 type kern_mode = Ftlow.kern_mode = Kerning_default | Kerning_unfitted | Kerning_unscaled
 
-let get_kerning face left_glyph right_glyph kern_mode = 
+let get_kerning face left_glyph right_glyph kern_mode =
   let x, y = Ftlow.get_kerning face.cont left_glyph right_glyph kern_mode in
   { ft_x = float_of_intfrac6 x;
     ft_y = float_of_intfrac6 y; }
-  

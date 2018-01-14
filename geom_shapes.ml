@@ -14,7 +14,7 @@ struct
     let v0 = sub p1 p0 in
     let v1 = sub p p0 in
     K.compare (area v0 v1) K.zero
-  
+
   let compare_segment ?(closed=true) p0 p1 p =
     let vl = sub p0 p1 in
     let vp = sub p0 p in
@@ -26,12 +26,12 @@ struct
     if cmp2 > 0 then false else
     if cmp2 = 0 then closed else
     true
-  
+
   let compare_coord c p0 p1 =
     K.compare p0.(c) p1.(c)
 
   let compare_x = compare_coord 0
-  
+
   let compare_y = compare_coord 1
 
   let distance2 p0 p1 = norm2 Infix.(p1 -~ p0)
@@ -132,7 +132,7 @@ struct
   include (Ring : Pfds_intf.RING_GEN with type 'a t := 'a ring)
 
   type t = Point.t ring
-  
+
   let debug = false
 
   let iter_pairs f t =

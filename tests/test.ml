@@ -24,9 +24,9 @@ let square = make_poly [|
   make_point 1. (-1.) ;
   make_point 1. 1. ;
   make_point (-1.) 1.
-|] 
+|]
 
-let test_path = 
+let test_path =
   Path.empty (make_point (-1.) 1.) |>
   Path.bezier_to (make_point 1. 1.) [ make_point (-1.) (-2.) ; make_point 1. (-2.) ]
 

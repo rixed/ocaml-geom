@@ -174,7 +174,7 @@ struct
       let polys = Algo.polys_of_paths ~res glyph.paths in
       add_cache key polys ;
       polys
-  
+
   let bbox glyph =
     let rec extend_bbox current = function
       | [] -> current
@@ -258,7 +258,7 @@ struct
 
   let to_polys ~res word =
     List.map (fun (p, g) -> p, Glyph.to_polys ~res g) word
-  
+
   let to_paths word =
     List.map (fun (p, g) -> p, Glyph.to_paths g) word
 
