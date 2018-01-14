@@ -20,7 +20,8 @@ C_SOURCES = ftintf.c
 CPPFLAGS += $(shell freetype-config --cflags)
 LDLIBS += $(shell freetype-config --libs)
 
-REQUIRES = unix pfds algen
+REQUIRES = unix pfds algen batteries
+# batteries only for Utf8
 
 OCAMLOPTFLAGS =
 OCAMLFLAGS =

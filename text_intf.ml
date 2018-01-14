@@ -6,7 +6,8 @@ sig
   module Path : Geom.PATH with module Point = Poly.Point
   type t
 
-  val make      : char -> t
+  (* That int should be the unicode of the char: *)
+  val make      : int -> t
   val to_paths  : t -> Path.t list
   val to_polys  : res:Path.Point.K.t -> t -> Poly.t list
   val bbox      : t -> Poly.Point.Bbox.t

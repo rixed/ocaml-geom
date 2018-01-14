@@ -60,9 +60,9 @@ struct
     advance_y : float ;
     metrics : glyph_metrics }
 
-  let make chr =
+  let make unicode =
     let face, _face_info = get_face () in
-    let index = get_char_index face (int_of_char chr) in
+    let index = get_char_index face unicode in
     let advance_x, advance_y = load_glyph face index [ Load_no_scale ; Load_no_hinting ] in
     let metrics = get_glyph_metrics face in
     let outline = get_outline_contents face in
@@ -219,11 +219,18 @@ struct
   type t = (Point.t * Glyph.t) list
 
   let make ?orientation str =
+    (* FIXME: BatUtf8.fold *)
+    let i = ref 0 in
+    let unicodes = Array.make (BatUTF8.length str) 0 in
+    BatUTF8.iter (fun c ->
+      unicodes.(!i) <- BatUChar.code c ;
+      incr i
+    ) str ;
     let rec add_char i word pos =
-      if i >= String.length str then
+      if i >= Array.length unicodes then
         word
       else
-        let c = str.[i] in
+        let c = unicodes.(i) in
         (* TODO: use also previous char to choose a better glyph for 2 successive chars *)
         let glyph = Glyph.make c in
         let offset = match word with
