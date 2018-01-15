@@ -172,11 +172,14 @@ struct
   let map_edges f t =
     let pp = Point.print in
     (* Move prev_stop, last prev_ctrls next_start and first next_ctrls
-     * to make prev_stop and next_start equal: *)
-    let connect prev_start prev_stop
-                next_start next_stop =
+     * to make prev_stop and next_start equal. Returns a bool telling
+     * if next_start must be added to the poly, and an optional point
+     * that should replace prev_stop: *)
+    let connect p prev_start prev_stop
+                  next_start next_stop =
       if Point.eq prev_stop next_start then (
-          true
+          (* We just need next_stop then: *)
+          insert_after p next_stop
       ) else (
           match Point.segment_intersection prev_start prev_stop
                                            next_start next_stop with
@@ -189,13 +192,11 @@ struct
               Format.printf "No intersection between@ %a - %a and@ %a %a@."
                 Point.print prev_start Point.print prev_stop
                 Point.print next_start Point.print next_stop ;
-            false
+            insert_after (insert_after p next_start) next_stop
           | Point.IntersectInside inters ->
-            Point.copyi prev_stop inters ;
-            (* Point.copyi next_start inters new_start won't be used *)
             if debug then
-              Format.printf "Moved prev_stop and next_start to %a@." pp inters ;
-            true
+              Format.printf "Replaced prev_stop and next_start by %a@." pp inters ;
+            insert_after (insert_after (prev (remove p)) inters) next_stop
       ) in
     let p =
       fold_leftr (fun p t ->
@@ -209,12 +210,7 @@ struct
             insert_after (insert_after p start') stop'
           ) else (
             let prev_stop = get p and prev_start = get (prev p) in
-            if connect prev_start prev_stop start' stop' then
-              insert_after p stop'
-            else
-              (* No intersection? Let's just keep all our points as they
-               * are. *)
-              insert_after (insert_after p start') stop'
+            connect p prev_start prev_stop start' stop'
           )
         ) empty t in
     (* We haven't "connected" the first and the last points.
@@ -223,13 +219,7 @@ struct
      * we have one extra point): *)
     let prev_start = get (prev p) and prev_stop = get p
     and next_start = get (next p) and next_stop = get (next (next p)) in
-    if connect prev_start prev_stop next_start next_stop then
-      (* So now prev_stop have been moved to the intersection
-       * position, and we must get rid of next_start. *)
-      remove (next p)
-    else
-      (* We failed to connect? Simply keep both of them then! *)
-      p
+    connect p prev_start prev_stop next_start next_stop
 
   let translate v = map (fun p -> Point.add p v)
 
