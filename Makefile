@@ -62,7 +62,7 @@ reinstall: uninstall install
 
 check: $(ARCHIVE) $(XARCHIVE)
 	$(MAKE) -C tests
-	@for t in tests/*.opt ; do $$t ; done
+	@set -e ; for t in tests/*.opt ; do echo "Running $$t" ; $$t ; done
 	@echo Ok
 
 clean-spec:
