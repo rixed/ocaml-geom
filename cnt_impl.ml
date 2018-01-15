@@ -12,9 +12,8 @@ struct
     | Leaf -> Tree (e, Leaf, Leaf)
     | Tree (e', left, right) ->
       let cmp = Elmt.compare e e' in
-      if cmp < 0 then Tree (e', insert left e, right) else
-      if cmp > 0 then Tree (e', left, insert right e)
-      else t
+      if cmp <= 0 then Tree (e', insert left e, right) else
+                       Tree (e', left, insert right e)
 
   let rec iter t f = match t with
     | Leaf -> ()
@@ -28,10 +27,10 @@ struct
   let rec remove t e = match t with
     | Leaf -> raise Not_found
     | Tree (e', left, right) ->
+      if e' == e then merge left right else
       let cmp = Elmt.compare e e' in
-      if cmp < 0 then Tree (e', remove left e, right) else
-      if cmp > 0 then Tree (e', left, remove right e)
-      else merge left right
+      if cmp <= 0 then Tree (e', remove left e, right) else
+                       Tree (e', left, remove right e)
 
   let rec min = function
     | Leaf -> raise Not_found
