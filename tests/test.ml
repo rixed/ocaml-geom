@@ -33,7 +33,7 @@ let test_path =
 let letter_a =
   Algo.scale_poly
     (K.of_float 0.1)
-    (Glyph.to_polys ~res:(K.of_float 1.2) (Glyph.make 'a'))
+    (Glyph.to_polys ~res:(K.of_float 1.2) (Glyph.make (Char.code 'a')))
 
 let polys =
   let polys_list = [

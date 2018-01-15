@@ -19,7 +19,7 @@ let draw_polys polys =
   ignore (Graphics.(wait_next_event [Button_down; Key_pressed])) ;
   Graphics.close_graph ()
 
-let o = Glyph.make 'O'
+let o = Glyph.make (Char.code 'O')
 let bbox_diag = Point.Bbox.diagonal (Glyph.bbox o)
 
 let () =
