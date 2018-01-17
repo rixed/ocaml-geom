@@ -215,11 +215,12 @@ struct
         ) empty t in
     (* We haven't "connected" the first and the last points.
      * After fold_leftr we end up with p cursor on the last inserted
-     * point. So we must _merge_ it with the next one (for so far,
-     * we have one extra point): *)
-    let prev_start = get (prev p) and prev_stop = get p
-    and next_start = get (next p) and next_stop = get (next (next p)) in
-    connect p prev_start prev_stop next_start next_stop
+     * point. Re-insert the first segment, using connect this time: *)
+    if length p < 3 then p else
+      let prev_start = get (prev p) and prev_stop = get p
+      and next_start = get (next p) and next_stop = get (next (next p)) in
+      let p = prev (remove (remove (next p))) in
+      connect p prev_start prev_stop next_start next_stop
 
   let translate v = map (fun p -> Point.add p v)
 
